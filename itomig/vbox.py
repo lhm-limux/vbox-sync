@@ -36,7 +36,7 @@ class RsyncError(Exception):
 class TargetNotWriteableError(Exception):
     pass
 
-class VBoxImage(object):
+class VBoxImageSync(object):
     def __init__(self, config, image_name, image_version):
         self.config = config
         self.image_name = image_name
@@ -95,10 +95,24 @@ class VBoxImage(object):
                                    self._construct_url(),
                                    self._construct_target()])
 
+
+class VBoxImage(object):
+    def __init__(self, config, image_name, image_version):
+        self.config = config
+        self.image_name = image_name
+        self.image_version = image_version
+        self.logger = Logger()
+
     def _make_vdi_immutable(self):
         self.logger.debug('Making the image immutable')
         subprocess.call(['vboxmanage', 'modifyhd', self._construct_target(),
                          'settype', 'immutable'])
+
+    def sync(self):
+        """This method syncs the image from the rsync server.  It delegates
+        this to a VBoxImageSync object."""
+        sync = VBoxImageSync(self.config, self.image_name, self.image_version)
+        sync.sync()
 
     def register(self):
         self.logger.info('Registering the image with VirtualBox')
