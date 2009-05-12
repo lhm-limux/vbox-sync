@@ -24,8 +24,10 @@
 from ConfigParser import ConfigParser
 import logging
 import optparse
+import os
 import os.path
 import subprocess
+import tempfile
 
 class ImageNotFoundError(Exception):
     pass
@@ -118,8 +120,76 @@ class VBoxImage(object):
         self.logger.info('Registering the image with VirtualBox')
         self._make_vdi_immutable()
 
-    def invoke(self):
+    def _vbox_home(self):
+        return os.path.expanduser('~/.VirtualBox-%s' % self.image_name)
+
+    def _ensure_vbox_home(self):
+        vbox_home = self._vbox_home()
+        # Create VBox home directory.
+        if not os.path.exists(vbox_home):
+            self.logger.debug('Creating VBox home for %s in %s',
+                              self.image_name, vbox_home)
+            os.makedirs(vbox_home, 0700)
+        # Create data disk storage directory.
+        if not os.path.exists(os.path.join(vbox_home, 'VDI')):
+            os.makedirs(os.path.join(vbox_home, 'VDI'))
+        os.environ['VBOX_USER_HOME'] = vbox_home
+
+    def _ensure_data_disk(self, size=32):
+        """Creates a data disk for use as the second harddrive in the
+        VM with the passed size in megabytes."""
+        # A temporary image we create.
+        data_disk_tmp = tempfile.NamedTemporaryFile()
+        data_disk = data_disk_tmp.name
+        # The real image which will be used with VBox.
+        data_disk_vdi = os.path.join(self._vbox_home(), 'VDI',
+                                     '%s-data.vdi' % self.image_name)
+        if os.path.exists(data_disk_vdi):
+            # Do nothing.
+            return
+        self.logger.debug('Creating data disk image for %s.', self.image_name)
+        # First create an empty image full of zeros.  This needs some
+        # space in the temporary directory, but avoids that a template needs
+        # to be shipped separately.  VirtualBox is compressing the image
+        # when converting from RAW to VDI anyway (32M to 1M in tests with
+        # fat16).
+        ret = subprocess.call(['dd', 'if=/dev/zero', 'of=%s' % data_disk,
+                               'bs=1M', 'count=%d' % size])
+        # XXX: improve exceptions here
+        # XXX: catch stderr+stdout and only print it if something goes wrong
+        if ret != 0:
+            raise Exception, 'dd failed'
+        # Now create a DOS disk label.
+        ret = subprocess.call(['parted', data_disk, 'mklabel', 'msdos'])
+        if ret != 0:
+            raise Exception, 'parted-mklabel failed'
+        # Create a fat16 or fat32 partition, depending on the size.  parted
+        # complains if the partition is too tiny for fat32 but the minimum
+        # size is determined by a strange algorithm.  In tests it already
+        # worked with 64M, but not with 32M.  It's probably not advisable
+        # to use fat32 on such tiny images anyway.
+        if size >= 128:
+            type = 'fat32'
+        else:
+            type = 'fat16'
+        ret = subprocess.call(['parted', data_disk, 'mkpartfs', 'primary',
+                               type, '1', str(size)])
+        if ret != 0:
+            raise Exception, 'parted-mkpartfs failed'
+        # Now convert it using vboxmanage.
+        ret = subprocess.call(['vboxmanage', 'convertfromraw', '-format',
+                               'VDI', data_disk, data_disk_vdi])
+        if ret != 0:
+            raise Exception, 'vboxmanage-convertfromraw failed'
+        # data_disk_vdi is now a disk usable for D:
+
+    def _register_disks(self):
         pass
+
+    def invoke(self):
+        self._ensure_vbox_home()
+        self._ensure_data_disk()
+        self._register_disks()
 
 class Config(object):
     """Configuration object that reads ~/.config/vbox-sync.cfg
