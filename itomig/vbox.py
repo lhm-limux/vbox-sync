@@ -203,8 +203,8 @@ class VBoxImage(object):
                                '-format', 'VDI', data_disk, data_disk_vdi])
         if ret != 0:
             raise Exception, 'vboxmanage-convertfromraw failed'
-        # This should destroy the temporary image.
-        data_disk.close()
+        # This destroys the temporary image.
+        data_disk_tmp.close()
         # data_disk_vdi is now a disk usable for D:
         self.disks['data'] = data_disk_vdi
 
