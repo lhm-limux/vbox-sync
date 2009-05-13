@@ -132,7 +132,7 @@ class VBoxImage(object):
     def sync(self):
         """This method syncs the image from the rsync server.  It delegates
         this to a VBoxImageSync object."""
-        sync = VBoxImageSync(self.config, self.image_name, self.image_version)
+        sync = VBoxImageSync(self)
         sync.sync()
 
     def register(self):
