@@ -239,6 +239,9 @@ class VBoxImage(object):
     def _register_vm(self):
         # XXX: Maybe update settings only after upgrades?  That's the only
         # part that would require passing in the version on the command-line.
+        # TODO: We really need to change this, as the immutability of the
+        # system disk creates differential images that are assigned to the
+        # ide port instead
         uuid = self.vbox_registry.create_vm(self.image_name)
         # Read the supplied configuration file for VM parameters.
         parser = ConfigParser()
@@ -279,6 +282,8 @@ class VBoxImage(object):
         # XXX: do we want that?  function does not return
         os.execlp('vboxmanage', 'vboxmanage', '-nologo',
                   'startvm', self.image_name)
+        # TODO: make this configurable to either use SDL or VBox proper
+        #os.execlp('vboxsdl', '-vm', self.image_name)
 
 class VBoxRegistry(object):
     # XXX: handle failures
