@@ -219,6 +219,50 @@ class VBoxImage(object):
         # XXX: do we want that?  function does not return
         os.execlp('vboxmanage', 'vboxmanage', 'startvm', self.image_name)
 
+class VBoxRegistry(object):
+    def __init__(self, vbox_home):
+        self.vbox_home = vbox_home
+
+    def _get_list_value(self, line):
+        return line.split(' ', 1)[1].strip()
+
+    def get_vms(self):
+        p = subprocess.Popen(['vboxmanage', 'list', 'vms'],
+                             stdout=subprocess.PIPE)
+        vms, current_name = {}, None
+        output = p.communicate()[0]
+        for line in output.splitlines():
+            # XXX: test if this is locale dependent
+            if line.startswith('Name:'):
+                current_name = self._get_list_value(line)
+            elif line.startswith('UUID:'):
+                uuid = self._get_list_value(line)
+                vms[uuid] = current_name
+        return vms
+
+    def register_vm(self, name):
+        """Registers a new VM with VirtualBox and returns its UUID."""
+        p = subprocess.Popen(['vboxmanage', 'createvm', '-name', name,
+                              '-register'], stdout=subprocess.PIPE)
+        output = p.communicate()[0]
+        for line in output.splitlines():
+            if line.startswith('UUID:'):
+                return self._get_list_value(line)
+        # XXX: No UUID found, something went wrong inside vbox.  We should
+        # raise an exception instead.
+        assert False
+
+    def modify_vm(self, identifier, parameters):
+        """Takes the VM identifier (either name or UUID) and a dict of
+        parameters and adjusts the VM parameters accordingly through
+        vboxmanage."""
+        # XXX: We should interact with vbox more sanely.  Sadly vbox's CLI
+        # interface is not machine-parseable, so that's hard.
+        arg_list = []
+        for key in parameters:
+            arg_list.extend([key, str(parameters[key])])
+        subprocess.call(['vboxmanage', 'modifyvm', identifier] + arg_list)
+
 class Config(object):
     """Configuration object that reads ~/.config/vbox-sync.cfg
     and /etc/vbox-sync.cfg iff they exist and overrides settings
