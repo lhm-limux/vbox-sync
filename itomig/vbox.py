@@ -64,11 +64,15 @@ class VBoxImageSync(object):
         self.logger = image.logger
 
     def _check_presence(self):
+        self._check_rsync_file(self._construct_url(self.image.vdi_filename()))
+        self._check_rsync_file(self._construct_url(self.image.cfg_filename()))
+
+    def _check_rsync_file(self, filename):
         """Submits a list request to the rsync server and raises
         ImageNotFoundError if rsync returns with a failure of 23
         (which is caused by ENOENT, among others) or raises
         RsyncError if rsync returns with any other error."""
-        retcode = subprocess.call(['rsync', '-q', self._construct_url()])
+        retcode = subprocess.call(['rsync', '-q', filename])
         if retcode == 0:
             self.logger.debug('Image found on the server.')
             return
@@ -88,27 +92,30 @@ class VBoxImageSync(object):
         if not os.path.exists(basedir):
             os.makedirs(basedir, 0755)
 
-    def _construct_url(self):
+    def _construct_url(self, filename):
+        print filename
         """Constructs a URL to the image file we want to retrieve based
         on the baseurl we got from the configuration object."""
         # urlparse.urljoin is insufficient here because it recognizes
         # rsync URLs as being non-relative and generally does not what
         # we want here.
-        image_path = '/'.join([self.image_name, self.image_version,
-                               self.image.vdi_filename()])
+        image_path = '/'.join([self.image_name, self.image_version, filename])
         url = '/'.join([self.config.baseurl, image_path])
         return url
+
+    def _sync_file(self, source, target):
+        # TODO: check retcode
+        retcode = subprocess.call(['rsync', '--progress', source, target])
 
     def sync(self):
         self._check_presence()
         self._ensure_target_directory()
         self._check_target_writeable()
         self.logger.info('Syncing image')
-        # TODO: check retcode
-        retcode = subprocess.call(['rsync', '--progress',
-                                   self._construct_url(),
-                                   self.image.vdi_path()])
-
+        self._sync_file(self._construct_url(self.image.cfg_filename()),
+                        self.image.cfg_path())
+        self._sync_file(self._construct_url(self.image.vdi_filename()),
+                        self.image.vdi_path())
 
 class VBoxImage(object):
     def __init__(self, config, image_name, image_version):
@@ -118,12 +125,20 @@ class VBoxImage(object):
         self.logger = Logger()
         self.disks = dict()
 
+    def cfg_filename(self):
+        return '%s.cfg' % self.image_name
+
     def vdi_filename(self):
         return '%s.vdi' % self.image_name
 
+    def _target_path(self, filename):
+        return os.path.join(self.config.target, self.image_name, filename)
+
     def vdi_path(self):
-        return os.path.join(self.config.target, self.image_name,
-                            self.vdi_filename())
+        return self._target_path(self.vdi_filename())
+
+    def cfg_path(self):
+        return self._target_path(self.cfg_filename())
 
     def _make_vdi_immutable(self):
         self.logger.debug('Making the image immutable')
@@ -221,7 +236,18 @@ class VBoxImage(object):
             self.vbox_registry.register_hdd(self.disks[disk], disk_type)
 
     def _register_vm(self):
-        pass
+        # XXX: Maybe update settings only after upgrades?  That's the only
+        # part that would require passing in the version on the command-line.
+        uuid = self.vbox_registry.create_vm(self.image_name)
+        # Read the supplied configuration file for VM parameters.
+        parser = ConfigParser()
+        parser.read(self.cfg_path())
+        # ConfigParser's items method gives us a list of tuples.  The map
+        # will unquote the values (i.e. remove spaces and quotes).  In the
+        # end it's casted to a dict.
+        parameters = dict(map(lambda t: (t[0], t[1].strip(' "\'')),
+                              parser.items('vmparameters')))
+        self.vbox_registry.modify_vm(uuid, parameters)
 
     def _ensure_system_disk(self):
         if not os.path.exists(self.vdi_path()):
@@ -238,12 +264,14 @@ class VBoxImage(object):
         self._register_vm()
         # Using execlp to replace the current process image.
         # XXX: do we want that?  function does not return
-        os.execlp('vboxmanage', 'vboxmanage', 'startvm', self.image_name)
+        os.execlp('vboxmanage', 'vboxmanage', '-nologo',
+                  'startvm', self.image_name)
 
 class VBoxRegistry(object):
     # XXX: handle failures
     def __init__(self, vbox_home):
         self.vbox_home = vbox_home
+        self.logger = Logger()
         # TODO: pass this through subprocess
         os.environ['VBOX_USER_HOME'] = vbox_home
 
@@ -274,8 +302,13 @@ class VBoxRegistry(object):
                 hdds.append(self._get_list_value(line))
         return hdds
 
-    def register_vm(self, name):
+    def create_vm(self, name):
         """Registers a new VM with VirtualBox and returns its UUID."""
+        vms = self.get_vms()
+        for uuid in vms:
+            if vms[uuid] == name:
+                return uuid
+        # VM does not exist already, create it in the registry.
         p = subprocess.Popen(['vboxmanage', '-nologo', 'createvm',
                               '-name', name, '-register'],
                              stdout=subprocess.PIPE)
@@ -313,6 +346,8 @@ class VBoxRegistry(object):
         if absolute_filename in self.get_hdds():
             # Nothing to do, it's already registered.
             return False
+        self.logger.debug('Registering new hard disk image %s with type %s.',
+                          absolute_filename, disk_type)
         subprocess.call(['vboxmanage', '-nologo', 'openmedium', 'disk',
                          os.path.abspath(filename), '-type', disk_type])
         return True
