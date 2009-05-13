@@ -22,8 +22,6 @@
 
 from itomig.vbox import VBoxImage, Config, OptionParser, Logger, \
     ImageNotFoundError
-import logging
-import os.path
 import sys
 
 def main(argv):

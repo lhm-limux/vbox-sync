@@ -21,6 +21,12 @@
 # See the Licence for the specific language governing
 # permissions and limitations under the Licence.
 
+"""
+This module fetches VirtualBox images from a rsync server specified
+in a configuration file and handles its user-local registration and
+invocation.
+"""
+
 from ConfigParser import ConfigParser
 import logging
 import optparse
@@ -30,20 +36,32 @@ import subprocess
 import tempfile
 
 class ImageNotFoundError(Exception):
+    """This exception is raised when the specified image cannot be found
+    with the given version on the rsync server.
+    """
     pass
 
 class RsyncError(Exception):
+    """This exception is raised when the rsync invocation to fetch the
+    image or to list the directory on the server fails with a different
+    error than 'File Not Found'.  For the latter, see ImageNotFoundError.
+    """
     pass
 
 class TargetNotWriteableError(Exception):
+    """This exception is raised when the target direction of the sync
+    operation is not writeable, which is commonly the case if the target
+    directory is only writeable as root and the script is invoked as a
+    normal, unprivileged user."""
     pass
 
 class VBoxImageSync(object):
-    def __init__(self, config, image_name, image_version):
-        self.config = config
-        self.image_name = image_name
-        self.image_version = image_version
-        self.logger = Logger()
+    def __init__(self, image):
+        self.image = image
+        self.config = image.config
+        self.image_name = image.image_name
+        self.image_version = image.image_version
+        self.logger = image.logger
 
     def _check_presence(self):
         """Submits a list request to the rsync server and raises
@@ -60,15 +78,15 @@ class VBoxImageSync(object):
             raise RsyncError, retcode
 
     def _check_target_writeable(self):
-        if not os.path.exists(self._construct_target()):
+        if not os.path.exists(self.image.vdi_path()):
             return
-        if not os.access(self._construct_target(), os.W_OK):
+        if not os.access(self.image.vdi_path(), os.W_OK):
             raise TargetNotWriteableError
 
     def _ensure_target_directory(self):
-        dir = os.path.dirname(self._construct_target())
-        if not os.path.exists(dir):
-            os.makedirs(dir, 0755)
+        basedir = os.path.dirname(self.image.vdi_path())
+        if not os.path.exists(basedir):
+            os.makedirs(basedir, 0755)
 
     def _construct_url(self):
         """Constructs a URL to the image file we want to retrieve based
@@ -77,25 +95,19 @@ class VBoxImageSync(object):
         # rsync URLs as being non-relative and generally does not what
         # we want here.
         image_path = '/'.join([self.image_name, self.image_version,
-                               self._vdi_filename()])
+                               self.image.vdi_filename()])
         url = '/'.join([self.config.baseurl, image_path])
         return url
-
-    def _construct_target(self):
-        return os.path.join(self.config.target, self.image_name,
-                            self._vdi_filename())
-
-    def _vdi_filename(self):
-        return '%s.vdi' % self.image_name
 
     def sync(self):
         self._check_presence()
         self._ensure_target_directory()
         self._check_target_writeable()
         self.logger.info('Syncing image')
+        # TODO: check retcode
         retcode = subprocess.call(['rsync', '--progress',
                                    self._construct_url(),
-                                   self._construct_target()])
+                                   self.image.vdi_path()])
 
 
 class VBoxImage(object):
@@ -105,9 +117,16 @@ class VBoxImage(object):
         self.image_version = image_version
         self.logger = Logger()
 
+    def vdi_filename(self):
+        return '%s.vdi' % self.image_name
+
+    def vdi_path(self):
+        return os.path.join(self.config.target, self.image_name,
+                            self.vdi_filename())
+
     def _make_vdi_immutable(self):
         self.logger.debug('Making the image immutable')
-        subprocess.call(['vboxmanage', 'modifyhd', self._construct_target(),
+        subprocess.call(['vboxmanage', 'modifyhd', self.vdi_path(),
                          'settype', 'immutable'])
 
     def sync(self):
@@ -137,7 +156,9 @@ class VBoxImage(object):
 
     def _ensure_data_disk(self, size=32):
         """Creates a data disk for use as the second harddrive in the
-        VM with the passed size in megabytes."""
+        VM with the passed size in megabytes.  The data disk will not be
+        resized in any way if the given size differs from the on-disk
+        image."""
         # A temporary image we create.
         data_disk_tmp = tempfile.NamedTemporaryFile()
         data_disk = data_disk_tmp.name
@@ -169,11 +190,11 @@ class VBoxImage(object):
         # worked with 64M, but not with 32M.  It's probably not advisable
         # to use fat32 on such tiny images anyway.
         if size >= 128:
-            type = 'fat32'
+            fs_type = 'fat32'
         else:
-            type = 'fat16'
+            fs_type = 'fat16'
         ret = subprocess.call(['parted', data_disk, 'mkpartfs', 'primary',
-                               type, '1', str(size)])
+                               fs_type, '1', str(size)])
         if ret != 0:
             raise Exception, 'parted-mkpartfs failed'
         # Now convert it using vboxmanage.
@@ -186,10 +207,17 @@ class VBoxImage(object):
     def _register_disks(self):
         pass
 
+    def _register_vm(self):
+        pass
+
     def invoke(self):
         self._ensure_vbox_home()
         self._ensure_data_disk()
         self._register_disks()
+        self._register_vm()
+        # Using execlp to replace the current process image.
+        # XXX: do we want that?  function does not return
+        os.execlp('vboxmanage', 'vboxmanage', 'startvm', self.image_name)
 
 class Config(object):
     """Configuration object that reads ~/.config/vbox-sync.cfg
@@ -222,6 +250,10 @@ class Config(object):
             self.target = options.target
 
 class OptionParser(optparse.OptionParser):
+    """An almost-normal OptionParser object, with the difference that it
+    sets logging to DEBUG if -d is passed.  As this is wanted for all
+    callees of this module we implement it centrally.
+    """
     def __init__(self, usage):
         optparse.OptionParser.__init__(self, usage)
         self.add_option('-d', '--debug', dest='debug',
