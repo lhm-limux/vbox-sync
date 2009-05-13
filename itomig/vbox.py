@@ -116,6 +116,7 @@ class VBoxImage(object):
         self.image_name = image_name
         self.image_version = image_version
         self.logger = Logger()
+        self.disks = dict()
 
     def vdi_filename(self):
         return '%s.vdi' % self.image_name
@@ -126,7 +127,7 @@ class VBoxImage(object):
 
     def _make_vdi_immutable(self):
         self.logger.debug('Making the image immutable')
-        subprocess.call(['vboxmanage', 'modifyhd', self.vdi_path(),
+        subprocess.call(['vboxmanage', '-nologo', 'modifyhd', self.vdi_path(),
                          'settype', 'immutable'])
 
     def sync(self):
@@ -198,20 +199,40 @@ class VBoxImage(object):
         if ret != 0:
             raise Exception, 'parted-mkpartfs failed'
         # Now convert it using vboxmanage.
-        ret = subprocess.call(['vboxmanage', 'convertfromraw', '-format',
-                               'VDI', data_disk, data_disk_vdi])
+        ret = subprocess.call(['vboxmanage', '-nologo', 'convertfromraw',
+                               '-format', 'VDI', data_disk, data_disk_vdi])
         if ret != 0:
             raise Exception, 'vboxmanage-convertfromraw failed'
+        # This should destroy the temporary image.
+        data_disk.close()
         # data_disk_vdi is now a disk usable for D:
+        self.disks['data'] = data_disk_vdi
 
     def _register_disks(self):
-        pass
+        for disk in self.disks:
+            if disk == 'system':
+                disk_type = 'immutable'
+            elif disk == 'data':
+                # TODO: Do we want that?  Causes it to be unaffected by
+                # snapshots.
+                disk_type = 'writethrough'
+            else:
+                disk_type = 'normal'
+            self.vbox_registry.register_hdd(self.disks[disk], disk_type)
 
     def _register_vm(self):
         pass
 
+    def _ensure_system_disk(self):
+        if not os.path.exists(self.vdi_path()):
+            # TODO: Use another Exception
+            raise Exception, 'System image not found!'
+        self.disks['system'] = self.vdi_path()
+
     def invoke(self):
         self._ensure_vbox_home()
+        self.vbox_registry = VBoxRegistry(self._vbox_home())
+        self._ensure_system_disk()
         self._ensure_data_disk()
         self._register_disks()
         self._register_vm()
@@ -220,14 +241,17 @@ class VBoxImage(object):
         os.execlp('vboxmanage', 'vboxmanage', 'startvm', self.image_name)
 
 class VBoxRegistry(object):
+    # XXX: handle failures
     def __init__(self, vbox_home):
         self.vbox_home = vbox_home
+        # TODO: pass this through subprocess
+        os.environ['VBOX_USER_HOME'] = vbox_home
 
     def _get_list_value(self, line):
         return line.split(' ', 1)[1].strip()
 
     def get_vms(self):
-        p = subprocess.Popen(['vboxmanage', 'list', 'vms'],
+        p = subprocess.Popen(['vboxmanage', '-nologo', 'list', 'vms'],
                              stdout=subprocess.PIPE)
         vms, current_name = {}, None
         output = p.communicate()[0]
@@ -240,15 +264,26 @@ class VBoxRegistry(object):
                 vms[uuid] = current_name
         return vms
 
+    def get_hdds(self):
+        p = subprocess.Popen(['vboxmanage', '-nologo', 'list', 'hdds'],
+                             stdout=subprocess.PIPE)
+        output = p.communicate()[0]
+        hdds = []
+        for line in output.splitlines():
+            if line.startswith('Location:'):
+                hdds.append(self._get_list_value(line))
+        return hdds
+
     def register_vm(self, name):
         """Registers a new VM with VirtualBox and returns its UUID."""
-        p = subprocess.Popen(['vboxmanage', 'createvm', '-name', name,
-                              '-register'], stdout=subprocess.PIPE)
+        p = subprocess.Popen(['vboxmanage', '-nologo', 'createvm',
+                              '-name', name, '-register'],
+                             stdout=subprocess.PIPE)
         output = p.communicate()[0]
         for line in output.splitlines():
             if line.startswith('UUID:'):
                 return self._get_list_value(line)
-        # XXX: No UUID found, something went wrong inside vbox.  We should
+        # TODO: No UUID found, something went wrong inside vbox.  We should
         # raise an exception instead.
         assert False
 
@@ -261,7 +296,26 @@ class VBoxRegistry(object):
         arg_list = []
         for key in parameters:
             arg_list.extend([key, str(parameters[key])])
-        subprocess.call(['vboxmanage', 'modifyvm', identifier] + arg_list)
+        subprocess.call(['vboxmanage', '-nologo', 'modifyvm', identifier] + \
+                        arg_list)
+
+    def register_hdd(self, filename, disk_type='normal'):
+        """Registers a VDI file with the VirtualBox media registry.
+
+        Supported disk types: normal, immutable and writethrough
+
+        Returns True if a change has been done to the registry and False
+        if the image was already registered.
+        """
+        # VirtualBox always works with absolute paths.  So we need to
+        # work with those too, unless everything will be messed up.
+        absolute_filename = os.path.abspath(filename)
+        if absolute_filename in self.get_hdds():
+            # Nothing to do, it's already registered.
+            return False
+        subprocess.call(['vboxmanage', '-nologo', 'openmedium', 'disk',
+                         os.path.abspath(filename), '-type', disk_type])
+        return True
 
 class Config(object):
     """Configuration object that reads ~/.config/vbox-sync.cfg
