@@ -156,7 +156,8 @@ class VBoxImage(object):
         self._make_vdi_immutable()
 
     def _vbox_home(self):
-        return os.path.expanduser('~/.VirtualBox-%s' % self.image_name)
+        path = '~/.VirtualBox-%s' % self.image_name
+        return os.path.abspath(os.path.expanduser(path))
 
     def _ensure_vbox_home(self):
         vbox_home = self._vbox_home()
@@ -243,10 +244,22 @@ class VBoxImage(object):
         parser = ConfigParser()
         parser.read(self.cfg_path())
         # ConfigParser's items method gives us a list of tuples.  The map
-        # will unquote the values (i.e. remove spaces and quotes).  In the
-        # end it's casted to a dict.
-        parameters = dict(map(lambda t: (t[0], t[1].strip(' "\'')),
+        # will unquote the values (i.e. remove spaces and quotes) and prepend
+        # a dash to the keys to act as the parameters.  In the end it's casted
+        # to a dict for later modification.
+        parameters = dict(map(lambda t: ('-%s' % t[0], t[1].strip(' "\'')),
                               parser.items('vmparameters')))
+        for disk in self.disks:
+            print disk
+            # TODO: improve this
+            if disk == 'system':
+                ide_port = 'hda'
+            elif disk == 'data':
+                ide_port = 'hdb'
+            else:
+                raise NotImplementedError, 'disks other than system and data '\
+                                           'implemented'
+            parameters['-%s' % ide_port] = self.disks[disk]
         self.vbox_registry.modify_vm(uuid, parameters)
 
     def _ensure_system_disk(self):
