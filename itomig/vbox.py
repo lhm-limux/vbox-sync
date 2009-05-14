@@ -93,7 +93,6 @@ class VBoxImageSync(object):
             os.makedirs(basedir, 0755)
 
     def _construct_url(self, filename):
-        print filename
         """Constructs a URL to the image file we want to retrieve based
         on the baseurl we got from the configuration object."""
         # urlparse.urljoin is insufficient here because it recognizes
@@ -105,7 +104,8 @@ class VBoxImageSync(object):
 
     def _sync_file(self, source, target):
         # TODO: check retcode
-        retcode = subprocess.call(['rsync', '--progress', source, target])
+        retcode = subprocess.call(['rsync', '--progress', '--times',
+                                   source, target])
 
     def sync(self):
         self._check_presence()
@@ -116,6 +116,15 @@ class VBoxImageSync(object):
                         self.image.cfg_path())
         self._sync_file(self._construct_url(self.image.vdi_filename()),
                         self.image.vdi_path())
+
+class VBoxInvocationError(Exception):
+    pass
+
+def guarded_vboxmanage_call(args):
+    cmdline = ['vboxmanage', '-nologo'] + args
+    retcode = subprocess.call(cmdline)
+    if retcode != 0:
+        raise VBoxInvocationError, ' '.join(cmdline)
 
 class VBoxImage(object):
     def __init__(self, config, image_name, image_version):
@@ -140,11 +149,6 @@ class VBoxImage(object):
     def cfg_path(self):
         return self._target_path(self.cfg_filename())
 
-    def _make_vdi_immutable(self):
-        self.logger.debug('Making the image immutable')
-        subprocess.call(['vboxmanage', '-nologo', 'modifyhd', self.vdi_path(),
-                         'settype', 'immutable'])
-
     def sync(self):
         """This method syncs the image from the rsync server.  It delegates
         this to a VBoxImageSync object."""
@@ -163,8 +167,8 @@ class VBoxImage(object):
         vbox_home = self._vbox_home()
         # Create VBox home directory.
         if not os.path.exists(vbox_home):
-            self.logger.debug('Creating VBox home for %s in %s',
-                              self.image_name, vbox_home)
+            self.logger.info('Creating VBox home for %s in %s',
+                             self.image_name, vbox_home)
             os.makedirs(vbox_home, 0700)
         # Create data disk storage directory.
         if not os.path.exists(os.path.join(vbox_home, 'VDI')):
@@ -185,7 +189,7 @@ class VBoxImage(object):
         if os.path.exists(data_disk_vdi):
             # Do nothing.
             return
-        self.logger.debug('Creating data disk image for %s.', self.image_name)
+        self.logger.info('Creating data disk image for %s.', self.image_name)
         # First create an empty image full of zeros.  This needs some
         # space in the temporary directory, but avoids that a template needs
         # to be shipped separately.  VirtualBox is compressing the image
@@ -215,10 +219,8 @@ class VBoxImage(object):
         if ret != 0:
             raise Exception, 'parted-mkpartfs failed'
         # Now convert it using vboxmanage.
-        ret = subprocess.call(['vboxmanage', '-nologo', 'convertfromraw',
-                               '-format', 'VDI', data_disk, data_disk_vdi])
-        if ret != 0:
-            raise Exception, 'vboxmanage-convertfromraw failed'
+        guarded_vboxmanage_call(['convertfromraw', '-format', 'VDI',
+                                 data_disk, data_disk_vdi])
         # This destroys the temporary image.
         data_disk_tmp.close()
         # data_disk_vdi is now a disk usable for D:
@@ -253,7 +255,6 @@ class VBoxImage(object):
         parameters = dict(map(lambda t: ('-%s' % t[0], t[1].strip(' "\'')),
                               parser.items('vmparameters')))
         for disk in self.disks:
-            print disk
             # TODO: improve this
             if disk == 'system':
                 ide_port = 'hda'
@@ -347,8 +348,7 @@ class VBoxRegistry(object):
         arg_list = []
         for key in parameters:
             arg_list.extend([key, str(parameters[key])])
-        subprocess.call(['vboxmanage', '-nologo', 'modifyvm', identifier] + \
-                        arg_list)
+        guarded_vboxmanage_call(['modifyvm', identifier] + arg_list)
 
     def register_hdd(self, filename, disk_type='normal'):
         """Registers a VDI file with the VirtualBox media registry.
@@ -366,8 +366,9 @@ class VBoxRegistry(object):
             return False
         self.logger.debug('Registering new hard disk image %s with type %s.',
                           absolute_filename, disk_type)
-        subprocess.call(['vboxmanage', '-nologo', 'openmedium', 'disk',
-                         os.path.abspath(filename), '-type', disk_type])
+        guarded_vboxmanage_call(['openmedium', 'disk',
+                                 os.path.abspath(filename),
+                                 '-type', disk_type])
         return True
 
 class Config(object):
