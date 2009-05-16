@@ -1,24 +1,33 @@
 This package was debianized by Philipp Kern <pkern@simplex> on
 Sat, 16 May 2009 11:18:57 +0200.
 
-It was downloaded from <url://example.com>
+Upstream Author:
 
-Upstream Author(s):
-
-    <put author's name and email here>
-    <likewise for another author>
+    Philipp Kern
 
 Copyright:
 
-    <Copyright (C) YYYY Name OfAuthor>
-    <likewise for another author>
+    © 2009 Philipp Kern <philipp.kern@itomig.de>
 
 License:
 
-    <Put the license of the package here indented by 4 spaces>
+    Licensed under the EUPL, Version 1.0 or – as soon they
+    will be approved by the European Commission - subsequent
+    versions of the EUPL (the "Licence");
+    you may not use this work except in compliance with the
+    Licence.
+    You may obtain a copy of the Licence at:
+
+    http://ec.europa.eu/idabc/eupl
+
+    Unless required by applicable law or agreed to in
+    writing, software distributed under the Licence is
+    distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+    express or implied.
+    See the Licence for the specific language governing
+    permissions and limitations under the Licence.
 
 The Debian packaging is copyright 2009, Philipp Kern <pkern@simplex> and
 is licensed under the GPL, see `/usr/share/common-licenses/GPL'.
 
-# Please also look if there are files or directories which have a
-# different copyright/license attached and list them here.
