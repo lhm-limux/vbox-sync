@@ -256,6 +256,7 @@ class VBoxImage(object):
         # to a dict for later modification.
         parameters = dict(map(lambda t: ('-%s' % t[0], t[1].strip(' "\'')),
                               parser.items('vmparameters')))
+        self.vbox_registry.modify_vm(uuid, parameters)
         for disk in self.disks:
             # TODO: improve this
             if disk == 'system':
@@ -265,8 +266,7 @@ class VBoxImage(object):
             else:
                 raise NotImplementedError, 'disks other than system and data '\
                                            'implemented'
-            parameters['-%s' % ide_port] = self.disks[disk]
-        self.vbox_registry.modify_vm(uuid, parameters)
+            self.vbox_registry.attach_hdd(uuid, ide_port, self.disks[disk])
 
     def _ensure_system_disk(self):
         if not os.path.exists(self.vdi_path()):
@@ -372,6 +372,18 @@ class VBoxRegistry(object):
                                  os.path.abspath(filename),
                                  '-type', disk_type])
         return True
+
+    def attach_hdd(self, identifier, ide_port, disk_identifier):
+        """Attaches a hard disk image to a VM ide port by detaching the old
+        and attaching the new image.  This works around failures by VirtualBox
+        if differential hard disks are already attached."""
+        # TODO: (IMPORTANT!) get rid of the differential disk leftover
+        # disconnect current HDD
+        guarded_vboxmanage_call(['modifyvm', identifier, '-%s' % ide_port,
+                                 'none'])
+        # attach the new one
+        guarded_vboxmanage_call(['modifyvm', identifier, '-%s' % ide_port,
+                                 disk_identifier])
 
 class Config(object):
     """Configuration object that reads ~/.config/vbox-sync.cfg
