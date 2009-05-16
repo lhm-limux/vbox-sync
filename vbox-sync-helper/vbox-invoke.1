@@ -1,0 +1,26 @@
+.TH VBOX-INVOKE "1" "May 2009" "vbox-invoke 0.1" "User Commands"
+.SH NAME
+vbox-invoke \- invoke a VirtualBox image retrieved with vbox-sync
+.SH SYNOPSIS
+.B vbox-invoke
+[\fIoptions\fR] \fIimage-name image-version\fR
+.SH DESCRIPTION
+.B vbox-invoke
+starts up VirtualBox with the given image.  For this to work
+it sets up a profile directory for each user (by default
+~/.VirtualBox-image-name), registers the hard disks distributed,
+a user-local data disk and registers the virtual machine itself.
+This is done once for each image version or if needed files
+are not present in the user's home directory
+.SH OPTIONS
+.TP
+\fB\-\-version\fR
+show program's version number and exit
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+show program's help message and exit
+.TP
+\fB\-d\fR, \fB\-\-debug\fR
+enables debugging output
+.SH "SEE ALSO"
+.BR vbox-sync (8)

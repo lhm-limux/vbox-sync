@@ -1,0 +1,29 @@
+.TH VBOX-SYNC "8" "May 2009" "vbox-sync 0.1" "User Commands"
+.SH NAME
+vbox-sync \- retrieves a VirtualBox image via rsync
+.SH SYNOPSIS
+.B vbox-sync
+[\fIoptions\fR] \fIimage-name image-version\fR
+.SH DESCRIPTION
+.B vbox-sync
+retrieves a given VirtualBox hard disk image together with a configuration
+file from a central rsync server.
+.SH OPTIONS
+.TP
+\fB\-\-version\fR
+show program's version number and exit
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+show program's help message and exit
+.TP
+\fB\-d\fR, \fB\-\-debug\fR
+enables debugging output
+.TP
+\fB\-b\fR URL, \fB\-\-baseurl\fR=\fIURL\fR
+the base URL of the host to sync from (e.g.
+rsync://host/module/)
+.TP
+\fB\-t\fR DEST\-DIR, \fB\-\-target\-directory\fR=\fIDEST\-DIR\fR
+the base directory to save the image in
+.SH "SEE ALSO"
+.BR vbox-invoke (1)
