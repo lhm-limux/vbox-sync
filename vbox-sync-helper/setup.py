@@ -9,4 +9,6 @@ setup(name='vbox-sync-helper',
         ],
       packages=['itomig'],
       scripts=['vbox-sync', 'vbox-invoke'],
+      data_files=[('share/man/man1', ['vbox-invoke.1']),
+                  ('share/man/man8', ['vbox-sync.8'])],
      )
