@@ -121,7 +121,7 @@ class VBoxInvocationError(Exception):
     pass
 
 def guarded_vboxmanage_call(args):
-    cmdline = ['vboxmanage', '-nologo'] + args
+    cmdline = ['VBoxManage', '-nologo'] + args
     retcode = subprocess.call(cmdline)
     if retcode != 0:
         raise VBoxInvocationError, ' '.join(cmdline)
@@ -218,7 +218,7 @@ class VBoxImage(object):
                                fs_type, '1', str(size)])
         if ret != 0:
             raise Exception, 'parted-mkpartfs failed'
-        # Now convert it using vboxmanage.
+        # Now convert it using VBoxManage.
         guarded_vboxmanage_call(['convertfromraw', '-format', 'VDI',
                                  data_disk, data_disk_vdi])
         # This destroys the temporary image.
@@ -281,7 +281,7 @@ class VBoxImage(object):
         self._register_vm()
         # Using execlp to replace the current process image.
         # XXX: do we want that?  function does not return
-        os.execlp('vboxmanage', 'vboxmanage', '-nologo',
+        os.execlp('VBoxManage', 'VBoxManage', '-nologo',
                   'startvm', self.image_name)
         # TODO: make this configurable to either use SDL or VBox proper
         #os.execlp('vboxsdl', '-vm', self.image_name)
@@ -298,7 +298,7 @@ class VBoxRegistry(object):
         return line.split(' ', 1)[1].strip()
 
     def get_vms(self):
-        p = subprocess.Popen(['vboxmanage', '-nologo', 'list', 'vms'],
+        p = subprocess.Popen(['VBoxManage', '-nologo', 'list', 'vms'],
                              stdout=subprocess.PIPE)
         vms, current_name = {}, None
         output = p.communicate()[0]
@@ -312,7 +312,7 @@ class VBoxRegistry(object):
         return vms
 
     def get_hdds(self):
-        p = subprocess.Popen(['vboxmanage', '-nologo', 'list', 'hdds'],
+        p = subprocess.Popen(['VBoxManage', '-nologo', 'list', 'hdds'],
                              stdout=subprocess.PIPE)
         output = p.communicate()[0]
         hdds = []
@@ -328,7 +328,7 @@ class VBoxRegistry(object):
             if vms[uuid] == name:
                 return uuid
         # VM does not exist already, create it in the registry.
-        p = subprocess.Popen(['vboxmanage', '-nologo', 'createvm',
+        p = subprocess.Popen(['VBoxManage', '-nologo', 'createvm',
                               '-name', name, '-register'],
                              stdout=subprocess.PIPE)
         output = p.communicate()[0]
@@ -342,7 +342,7 @@ class VBoxRegistry(object):
     def modify_vm(self, identifier, parameters):
         """Takes the VM identifier (either name or UUID) and a dict of
         parameters and adjusts the VM parameters accordingly through
-        vboxmanage."""
+        VBoxManage."""
         # XXX: We should interact with vbox more sanely.  Sadly vbox's CLI
         # interface is not machine-parseable, so that's hard.
         arg_list = []
