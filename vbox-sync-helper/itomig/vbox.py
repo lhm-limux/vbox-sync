@@ -27,6 +27,8 @@ in a configuration file and handles its user-local registration and
 invocation.
 """
 
+__VERSION__ = "@VERSION@"
+
 from ConfigParser import ConfigParser
 import logging
 import optparse
@@ -407,7 +409,8 @@ class OptionParser(optparse.OptionParser):
     callees of this module we implement it centrally.
     """
     def __init__(self, usage):
-        optparse.OptionParser.__init__(self, usage)
+        optparse.OptionParser.__init__(self, usage,
+                                       version="%prog " + __VERSION__)
         self.add_option('-d', '--debug', dest='debug',
                         help='enables debugging output',
                         action='callback', callback=self._enable_debug)
