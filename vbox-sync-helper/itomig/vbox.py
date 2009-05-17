@@ -400,6 +400,10 @@ class VBoxRegistry(object):
         'VMStateChangeTime': False,
         'GuestStatisticsUpdateInterval': False,
         'bootmenu': 'biosbootmenu',
+        'hda': False,
+        'hdb': False,
+        'hdc': False,
+        'hdd': False,
         }
 
     def dump_vm_config(self, identifier, output_file=None):
