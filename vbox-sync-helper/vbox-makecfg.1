@@ -1,0 +1,26 @@
+.TH VBOX-MAKECFG "1" "May 2009" "vbox-makecfg 0.1" "User Commands"
+.SH NAME
+vbox-makecfg \- create VM configuration files for vbox-invoke
+.SH SYNOPSIS
+.B vbox-makecfg
+[\fIoptions\fR] \fIvm-identifier\fR
+.SH OPTIONS
+.TP
+\fB\-\-version\fR
+show program's version number and exit
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+show this help message and exit
+.TP
+\fB\-d\fR, \fB\-\-debug\fR
+enables debugging output
+.TP
+\fB\-o\fR FILE, \fB\-\-output\-file\fR=\fIFILE\fR
+the output file to write to (defaults to stdout)
+.TP
+\fB\-\-vbox\-home\fR=\fIDIR\fR
+VirtualBox home directory (can also be overwritten by setting the
+.B VBOX_USER_HOME
+environment variable)
+.SH "SEE ALSO"
+.BR vbox-invoke (1)
