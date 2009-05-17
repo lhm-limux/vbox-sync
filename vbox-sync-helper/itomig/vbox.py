@@ -35,6 +35,7 @@ import optparse
 import os
 import os.path
 import subprocess
+import sys
 import tempfile
 
 class ImageNotFoundError(Exception):
@@ -294,7 +295,8 @@ class VBoxRegistry(object):
         self.vbox_home = vbox_home
         self.logger = Logger()
         # TODO: pass this through subprocess
-        os.environ['VBOX_USER_HOME'] = vbox_home
+        if vbox_home:
+            os.environ['VBOX_USER_HOME'] = vbox_home
 
     def _get_list_value(self, line):
         return line.split(' ', 1)[1].strip()
@@ -384,6 +386,50 @@ class VBoxRegistry(object):
         # attach the new one
         guarded_vboxmanage_call(['modifyvm', identifier, '-%s' % ide_port,
                                  disk_identifier])
+
+    # The machine-readable output of VBoxManage showvminfo needs severe fixups
+    # to be used as input for modifyvm's command-line interface.  The following
+    # dict specified which keys to discard (by setting them to False) and which
+    # keys to fix up because they are named differently, by specifying a
+    # replacement name.
+    _transform_vminfo_keys = {
+        'name': False,
+        'UUID': False,
+        'CfgFile': False,
+        'VMState': False,
+        'VMStateChangeTime': False,
+        'GuestStatisticsUpdateInterval': False,
+        'bootmenu': 'biosbootmenu',
+        }
+
+    def dump_vm_config(self, identifier, output_file=None):
+        # XXX: We can get rid of this ad-hoc configuration file if we switch to
+        # the OVF format.
+        if output_file:
+            f = output_file
+        else:
+            f = sys.stdout
+        p = subprocess.Popen(['VBoxManage', '-nologo', 'showvminfo',
+                              identifier, '-machinereadable'],
+                             stdout=subprocess.PIPE)
+        output = p.communicate()[0]
+        f.write("[vmparameters]\n")
+        for line in output.splitlines():
+            for pattern in self._transform_vminfo_keys:
+                if line is None:
+                    continue
+                if line.startswith(pattern):
+                    if self._transform_vminfo_keys[pattern] is False:
+                        line = None
+                    else:
+                        line = '%s%s' % (self._transform_vminfo_keys[pattern],
+                                         line[len(pattern):])
+            if not line:
+                continue
+            f.write(line)
+            f.write("\n")
+            # TODO: create a modified configuration file from the machine-readable output
+
 
 class Config(object):
     """Configuration object that reads ~/.config/vbox-sync.cfg
