@@ -40,7 +40,8 @@ import tempfile
 
 class ImageNotFoundError(Exception):
     """This exception is raised when the specified image cannot be found
-    with the given version on the rsync server.
+    with the given version on the rsync server (vbox-sync) or if the image
+    was expected on the local disk and not found (vbox-invoke).
     """
     pass
 
@@ -106,9 +107,10 @@ class VBoxImageSync(object):
         return url
 
     def _sync_file(self, source, target):
-        # TODO: check retcode
         retcode = subprocess.call(['rsync', '--progress', '--times',
                                    source, target])
+        if retcode != 0:
+            raise RsyncError, retcode
 
     def sync(self):
         self._check_presence()
@@ -271,8 +273,7 @@ class VBoxImage(object):
 
     def _ensure_system_disk(self):
         if not os.path.exists(self.vdi_path()):
-            # TODO: Use another Exception
-            raise Exception, 'System image not found!'
+            raise ImageNotFoundError
         self.disks['system'] = self.vdi_path()
 
     def invoke(self):
@@ -432,8 +433,6 @@ class VBoxRegistry(object):
                 continue
             f.write(line)
             f.write("\n")
-            # TODO: create a modified configuration file from the machine-readable output
-
 
 class Config(object):
     """Configuration object that reads ~/.config/vbox-sync.cfg
