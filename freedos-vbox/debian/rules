@@ -75,6 +75,10 @@ binary-indep: build install
 	echo '#!/bin/sh' >> '$(CURDIR)/debian/$(PACKAGE)/DEBIAN/postinst'
 	echo 'vbox-sync $(IMAGE) $(VERSION)' >> '$(CURDIR)/debian/$(PACKAGE)/DEBIAN/postinst'
 	chmod 0755 '$(CURDIR)/debian/$(PACKAGE)/DEBIAN/postinst'
+	echo '#!/bin/bash' >> '$(CURDIR)/debian/$(PACKAGE)/DEBIAN/postrm'
+	echo 'if ! [ "$$1" = "remove" -o "$$1" = "purge" ]; then exit 0; fi' >> '$(CURDIR)/debian/$(PACKAGE)/DEBIAN/postrm'
+	echo 'vbox-dispose $(IMAGE) $(VERSION)' >> '$(CURDIR)/debian/$(PACKAGE)/DEBIAN/postrm'
+	chmod 0755 '$(CURDIR)/debian/$(PACKAGE)/DEBIAN/postrm'
 	dh_gencontrol
 	dh_md5sums
 	dh_builddeb
