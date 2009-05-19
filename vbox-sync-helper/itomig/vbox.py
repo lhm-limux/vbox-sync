@@ -207,7 +207,10 @@ class VBoxImage(object):
         if ret != 0:
             raise Exception, 'dd failed'
         # Now create a DOS disk label.
-        ret = subprocess.call(['parted', data_disk, 'mklabel', 'msdos'])
+        # (The path to parted is explicitly specified, because /sbin is not
+        # always in the path.  Maybe this should be replaced by an
+        # environment modification later on.)
+        ret = subprocess.call(['/sbin/parted', data_disk, 'mklabel', 'msdos'])
         if ret != 0:
             raise Exception, 'parted-mklabel failed'
         # Create a fat16 or fat32 partition, depending on the size.  parted
@@ -219,7 +222,7 @@ class VBoxImage(object):
             fs_type = 'fat32'
         else:
             fs_type = 'fat16'
-        ret = subprocess.call(['parted', data_disk, 'mkpartfs', 'primary',
+        ret = subprocess.call(['/sbin/parted', data_disk, 'mkpartfs', 'primary',
                                fs_type, '1', str(size)])
         if ret != 0:
             raise Exception, 'parted-mkpartfs failed'
