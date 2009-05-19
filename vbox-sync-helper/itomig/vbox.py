@@ -111,6 +111,9 @@ class VBoxImageSync(object):
                                    source, target])
         if retcode != 0:
             raise RsyncError, retcode
+        # Make it publically readable, do not inherit the permission
+        # even if copied from the local disk.
+        os.chmod(target, 0644)
 
     def sync(self):
         self._check_presence()
