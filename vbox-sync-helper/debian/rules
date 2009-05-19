@@ -20,12 +20,22 @@ install:
 	dh_testroot
 	dh_prep  
 	dh_installdirs
+
+	# Install the files according to setup.py.  Please note that
+	# --install-layout was only introduced in recent versions of
+	# Python's distutils.
 	python setup.py install \
 		--root="$(CURDIR)/debian/vbox-sync-helper" \
 		--install-layout=deb
+
+	# vbox-{sync,dispose} are administrative utilities that should
+	# not be called by normal users, so move them.
 	mv -v "$(CURDIR)/debian/vbox-sync-helper/usr/bin/vbox-sync" \
 		"$(CURDIR)/debian/vbox-sync-helper/usr/sbin"
-	find "$(CURDIR)/debian/vbox-sync-helper" -name 'vbox.py'
+	mv -v "$(CURDIR)/debian/vbox-sync-helper/usr/bin/vbox-dispose" \
+		"$(CURDIR)/debian/vbox-sync-helper/usr/sbin"
+
+	# Write the package version into the itomig.vbox module.
 	find "$(CURDIR)/debian/vbox-sync-helper" -name 'vbox.py' | \
 		xargs sed -i -e 's,@VERSION@,$(VERSION),g'
 
@@ -40,24 +50,11 @@ binary-arch: install
 	dh_installchangelogs 
 	dh_installdocs
 	dh_installexamples
-#	dh_install
-#	dh_installmenu
-#	dh_installdebconf
-#	dh_installlogrotate
-#	dh_installemacsen
-#	dh_installpam
-#	dh_installmime
-#	dh_python
-#	dh_installinit
-#	dh_installcron
-#	dh_installinfo
 	dh_installman
 	dh_link
 	dh_strip
 	dh_compress
 	dh_fixperms
-#	dh_perl
-#	dh_makeshlibs
 	dh_pysupport
 	dh_installdeb
 	dh_shlibdeps

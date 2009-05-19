@@ -30,6 +30,7 @@ invocation.
 __VERSION__ = "@VERSION@"
 
 from ConfigParser import ConfigParser
+import errno
 import logging
 import optparse
 import os
@@ -148,8 +149,11 @@ class VBoxImage(object):
     def vdi_filename(self):
         return '%s.vdi' % self.image_name
 
-    def _target_path(self, filename):
-        return os.path.join(self.config.target, self.image_name, filename)
+    def _target_path(self, filename=None):
+        if filename:
+            return os.path.join(self.config.target, self.image_name, filename)
+        else:
+            return os.path.join(self.config.target, self.image_name)
 
     def vdi_path(self):
         return self._target_path(self.vdi_filename())
@@ -295,6 +299,23 @@ class VBoxImage(object):
                   'startvm', self.image_name)
         # TODO: make this configurable to either use SDL or VBox proper
         #os.execlp('vboxsdl', '-vm', self.image_name)
+
+    def dispose(self):
+        # NB: This does not clean up the data disks in the user home
+        # directories.  OTOH there is no sane way to handle that,
+        # as user homes should not be touched.
+        if os.path.exists(self.vdi_path()):
+            os.unlink(self.vdi_path())
+        if os.path.exists(self.cfg_path()):
+            os.unlink(self.cfg_path())
+        # Remove the parent directory if empty.
+        try:
+            os.rmdir(self._target_path())
+        except OSError, e:
+            if not e.errno == errno.ENOTEMPTY:
+                raise
+            self.logger.warn('%s not empty, thus not removed.',
+                             self._target_path())
 
 class VBoxRegistry(object):
     # XXX: handle failures

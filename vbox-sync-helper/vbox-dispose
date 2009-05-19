@@ -1,0 +1,45 @@
+#!/usr/bin/env python
+# vim:set ft=python et sw=4 encoding=utf-8:
+#
+# © 2009 Philipp Kern <philipp.kern@itomig.de>
+#
+# Licensed under the EUPL, Version 1.0 or – as soon they
+# will be approved by the European Commission - subsequent
+# versions of the EUPL (the "Licence");
+# you may not use this work except in compliance with the
+# Licence.
+# You may obtain a copy of the Licence at:
+# 
+# http://ec.europa.eu/idabc/eupl
+# 
+# Unless required by applicable law or agreed to in
+# writing, software distributed under the Licence is
+# distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+# express or implied.
+# See the Licence for the specific language governing
+# permissions and limitations under the Licence.
+
+from itomig.vbox import VBoxImage, Config, OptionParser, Logger, \
+    ImageNotFoundError
+import sys
+
+def main(argv):
+    # Parse command-line parameters.
+    usage = 'usage: %prog [options] image-name image-version'
+    parser = OptionParser(usage)
+    parser.add_option('-t', '--target-directory', dest='target',
+                      metavar='DEST-DIR', help='the base directory to save '\
+                      'the image in')
+    (options, args) = parser.parse_args(argv)
+    if len(args) != 3:
+        parser.error('incorrect number of arguments')
+    image_name, image_version = args[1:3]
+    config = Config(options)
+    # Do it.
+    img = VBoxImage(config, image_name, image_version)
+    img.dispose()
+
+if __name__ == '__main__':
+    main(sys.argv)
+
