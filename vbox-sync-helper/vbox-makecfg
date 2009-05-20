@@ -31,13 +31,16 @@ def main(argv):
                       metavar='FILE', help='the output file to write to')
     parser.add_option('--vbox-home', dest='vbox_home',
                       metavar='DIR', help='VirtualBox home directory')
+    parser.add_option('-s', '--data-disk-size', dest='data_disk_size',
+                      metavar='SIZE', help='size of data disk in MB')
     (options, args) = parser.parse_args(argv)
     if len(args) != 2:
         parser.error('incorrect number of arguments')
     vm_identifier = args[1]
     config = Config(options)
     registry = VBoxRegistry(options.vbox_home)
-    registry.dump_vm_config(vm_identifier, output_file=options.output_file)
+    registry.dump_vm_config(vm_identifier, output_file=options.output_file,
+                            data_disk_size=options.data_disk_size)
 
 if __name__ == '__main__':
     main(sys.argv)

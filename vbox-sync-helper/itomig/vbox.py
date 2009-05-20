@@ -187,7 +187,7 @@ class VBoxImage(object):
             os.makedirs(os.path.join(vbox_home, 'VDI'))
         os.environ['VBOX_USER_HOME'] = vbox_home
 
-    def _ensure_data_disk(self, size=32):
+    def _ensure_data_disk(self):
         """Creates a data disk for use as the second harddrive in the
         VM with the passed size in megabytes.  The data disk will not be
         resized in any way if the given size differs from the on-disk
@@ -201,6 +201,12 @@ class VBoxImage(object):
         if os.path.exists(data_disk_vdi):
             # Do nothing.
             return
+        vmparameters = dict(self._read_cfg())
+        if not 'datadisksize' in vmparameters:
+            # No data disk size specified, do not create a data disk.
+            print vmparameters
+            return
+        size = int(vmparameters['datadisksize'])
         self.logger.info('Creating data disk image for %s.', self.image_name)
         # First create an empty image full of zeros.  This needs some
         # space in the temporary directory, but avoids that a template needs
@@ -253,6 +259,12 @@ class VBoxImage(object):
                 disk_type = 'normal'
             self.vbox_registry.register_hdd(self.disks[disk], disk_type)
 
+    def _read_cfg(self):
+        """Read the supplied configuration file for VM parameters."""
+        parser = ConfigParser()
+        parser.read(self.cfg_path())
+        return parser.items('vmparameters')
+
     def _register_vm(self):
         # XXX: Maybe update settings only after upgrades?  That's the only
         # part that would require passing in the version on the command-line.
@@ -260,15 +272,14 @@ class VBoxImage(object):
         # system disk creates differential images that are assigned to the
         # ide port instead
         uuid = self.vbox_registry.create_vm(self.image_name)
-        # Read the supplied configuration file for VM parameters.
-        parser = ConfigParser()
-        parser.read(self.cfg_path())
         # ConfigParser's items method gives us a list of tuples.  The map
         # will unquote the values (i.e. remove spaces and quotes) and prepend
         # a dash to the keys to act as the parameters.  In the end it's casted
         # to a dict for later modification.
         parameters = dict(map(lambda t: ('-%s' % t[0], t[1].strip(' "\'')),
-                              parser.items('vmparameters')))
+                              self._read_cfg()))
+        if '-datadisksize' in parameters:
+            del parameters['-datadisksize']
         self.vbox_registry.modify_vm(uuid, parameters)
         for disk in self.disks:
             # TODO: improve this
@@ -434,7 +445,7 @@ class VBoxRegistry(object):
         'hdd': False,
         }
 
-    def dump_vm_config(self, identifier, output_file=None):
+    def dump_vm_config(self, identifier, output_file=None, data_disk_size=None):
         # XXX: We can get rid of this ad-hoc configuration file if we switch to
         # the OVF format.
         if output_file:
@@ -460,6 +471,8 @@ class VBoxRegistry(object):
                 continue
             f.write(line)
             f.write("\n")
+        if data_disk_size:
+            f.write("datadisksize=%s\n" % str(data_disk_size))
 
 class Config(object):
     """Configuration object that reads ~/.config/vbox-sync.cfg
