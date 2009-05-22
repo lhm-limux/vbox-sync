@@ -131,7 +131,7 @@ class VBoxInvocationError(Exception):
     pass
 
 def guarded_vboxmanage_call(args):
-    cmdline = ['VBoxManage', '-nologo'] + args
+    cmdline = ['VBoxManage', '-nologo', '--convertSettingsBackup'] + args
     retcode = subprocess.call(cmdline)
     if retcode != 0:
         raise VBoxInvocationError, ' '.join(cmdline)
@@ -342,7 +342,9 @@ class VBoxRegistry(object):
         return line.split(' ', 1)[1].strip()
 
     def get_vms(self):
-        p = subprocess.Popen(['VBoxManage', '-nologo', 'list', 'vms'],
+        p = subprocess.Popen(['VBoxManage', '-nologo',
+                              '--convertSettingsBackup',
+                              'list', 'vms'],
                              stdout=subprocess.PIPE)
         vms, current_name = {}, None
         output = p.communicate()[0]
@@ -360,7 +362,9 @@ class VBoxRegistry(object):
         return vms
 
     def get_hdds(self):
-        p = subprocess.Popen(['VBoxManage', '-nologo', 'list', 'hdds'],
+        p = subprocess.Popen(['VBoxManage', '-nologo',
+                              '--convertSettingsBackup',
+                              'list', 'hdds'],
                              stdout=subprocess.PIPE)
         output = p.communicate()[0]
         hdds = []
@@ -376,8 +380,9 @@ class VBoxRegistry(object):
             if vms[uuid] == name:
                 return uuid
         # VM does not exist already, create it in the registry.
-        p = subprocess.Popen(['VBoxManage', '-nologo', 'createvm',
-                              '-name', name, '-register'],
+        p = subprocess.Popen(['VBoxManage', '-nologo',
+                              '--convertSettingsBackup',
+                              'createvm', '-name', name, '-register'],
                              stdout=subprocess.PIPE)
         output = p.communicate()[0]
         for line in output.splitlines():
@@ -457,8 +462,9 @@ class VBoxRegistry(object):
             f = output_file
         else:
             f = sys.stdout
-        p = subprocess.Popen(['VBoxManage', '-nologo', 'showvminfo',
-                              identifier, '-machinereadable'],
+        p = subprocess.Popen(['VBoxManage', '-nologo',
+                              '--convertSettingsBackup',
+                              'showvminfo', identifier, '-machinereadable'],
                              stdout=subprocess.PIPE)
         output = p.communicate()[0]
         f.write("[vmparameters]\n")
