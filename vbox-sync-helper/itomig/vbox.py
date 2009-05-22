@@ -38,6 +38,7 @@ import os.path
 import subprocess
 import sys
 import tempfile
+import re
 
 class ImageNotFoundError(Exception):
     """This exception is raised when the specified image cannot be found
@@ -352,6 +353,10 @@ class VBoxRegistry(object):
             elif line.startswith('UUID:'):
                 uuid = self._get_list_value(line)
                 vms[uuid] = current_name
+            else:
+                m = re.match(r'"(.*)" {(.*)}', line)
+                if m:
+                    vms[m.group(2)] = m.group(1)
         return vms
 
     def get_hdds(self):
