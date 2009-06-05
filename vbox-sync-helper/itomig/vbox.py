@@ -321,13 +321,14 @@ class VBoxImage(object):
         if os.path.exists(self.cfg_path()):
             os.unlink(self.cfg_path())
         # Remove the parent directory if empty.
-        try:
-            os.rmdir(self._target_path())
-        except OSError, e:
-            if not e.errno == errno.ENOTEMPTY:
-                raise
-            self.logger.warn('%s not empty, thus not removed.',
-                             self._target_path())
+        if os.path.exists(self._target_path()):
+            try:
+                os.rmdir(self._target_path())
+            except OSError, e:
+                if not e.errno == errno.ENOTEMPTY:
+                    raise
+                self.logger.warn('%s not empty, thus not removed.',
+                                 self._target_path())
 
 class VBoxRegistry(object):
     # XXX: handle failures
