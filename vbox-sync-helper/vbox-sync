@@ -21,7 +21,7 @@
 # permissions and limitations under the Licence.
 
 from itomig.vbox import VBoxImage, Config, OptionParser, Logger, \
-    ImageNotFoundError
+    ImageNotFoundError, RsyncError
 import sys
 
 def main(argv):
@@ -45,6 +45,9 @@ def main(argv):
         img.sync()
     except ImageNotFoundError:
         Logger().error('Specified image not found on the server!')
+        sys.exit(1)
+    except RsyncError:
+        Logger().error('Rsync error. Is /etc/vbox-sync.cfg set up correctly?')
         sys.exit(1)
 
 if __name__ == '__main__':
