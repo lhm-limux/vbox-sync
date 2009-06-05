@@ -1,0 +1,25 @@
+.TH VBOX-DISPOSE "8" "June 2009" "vbox-dispose 0.1" "User Commands"
+.SH NAME
+vbox-dispose \- removes a VirtualBox image obtained by vbox-sync
+.SH SYNOPSIS
+.B vbox-dispose
+[\fIoptions\fR] \fIimage-name image-version\fR
+.SH DESCRIPTION
+.B vbox-dispose
+removes the VirtualBox hard disk images and configuration, as they were
+obtained by vbox-dispose.
+.SH OPTIONS
+.TP
+\fB\-\-version\fR
+show program's version number and exit
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+show program's help message and exit
+.TP
+\fB\-d\fR, \fB\-\-debug\fR
+enables debugging output
+.TP
+\fB\-t\fR DEST\-DIR, \fB\-\-target\-directory\fR=\fIDEST\-DIR\fR
+the base directory to remove the image from
+.SH "SEE ALSO"
+.BR vbox-invoke (1), vbox-sync (8)
