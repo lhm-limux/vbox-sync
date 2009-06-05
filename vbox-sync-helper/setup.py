@@ -10,5 +10,5 @@ setup(name='vbox-sync-helper',
       packages=['itomig'],
       scripts=['vbox-sync', 'vbox-invoke', 'vbox-makecfg', 'vbox-dispose'],
       data_files=[('share/man/man1', ['vbox-invoke.1', 'vbox-makecfg.1']),
-                  ('share/man/man8', ['vbox-sync.8'])],
+                  ('share/man/man8', ['vbox-sync.8', 'vbox-dispose.8'])],
      )
