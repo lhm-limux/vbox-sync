@@ -131,7 +131,7 @@ class VBoxInvocationError(Exception):
     pass
 
 def guarded_vboxmanage_call(args):
-    cmdline = ['VBoxManage', '-nologo', '--convertSettingsBackup'] + args
+    cmdline = ['VBoxManage', '-nologo', '-convertSettingsBackup'] + args
     retcode = subprocess.call(cmdline)
     if retcode != 0:
         raise VBoxInvocationError, ' '.join(cmdline)
@@ -344,7 +344,7 @@ class VBoxRegistry(object):
 
     def get_vms(self):
         p = subprocess.Popen(['VBoxManage', '-nologo',
-                              '--convertSettingsBackup',
+                              '-convertSettingsBackup',
                               'list', 'vms'],
                              stdout=subprocess.PIPE)
         vms, current_name = {}, None
@@ -364,7 +364,7 @@ class VBoxRegistry(object):
 
     def get_hdds(self):
         p = subprocess.Popen(['VBoxManage', '-nologo',
-                              '--convertSettingsBackup',
+                              '-convertSettingsBackup',
                               'list', 'hdds'],
                              stdout=subprocess.PIPE)
         output = p.communicate()[0]
@@ -382,7 +382,7 @@ class VBoxRegistry(object):
                 return uuid
         # VM does not exist already, create it in the registry.
         p = subprocess.Popen(['VBoxManage', '-nologo',
-                              '--convertSettingsBackup',
+                              '-convertSettingsBackup',
                               'createvm', '-name', name, '-register'],
                              stdout=subprocess.PIPE)
         output = p.communicate()[0]
@@ -464,7 +464,7 @@ class VBoxRegistry(object):
         else:
             f = sys.stdout
         p = subprocess.Popen(['VBoxManage', '-nologo',
-                              '--convertSettingsBackup',
+                              '-convertSettingsBackup',
                               'showvminfo', identifier, '-machinereadable'],
                              stdout=subprocess.PIPE)
         output = p.communicate()[0]
