@@ -305,6 +305,7 @@ class VBoxImage(object):
         self._ensure_data_disk()
         self._register_disks()
         self._register_vm()
+        self.vbox_registry.garbage_collect_hdds(self.image_name)
         # Using execlp to replace the current process image.
         # XXX: do we want that?  function does not return
         os.execlp('VBoxManage', 'VBoxManage', '-nologo',
@@ -436,6 +437,39 @@ class VBoxRegistry(object):
         # attach the new one
         guarded_vboxmanage_call(['modifyvm', identifier, '-%s' % ide_port,
                                  disk_identifier])
+
+    def _uuid_from_filename(self, filename):
+        m = re.match(r'{(.+)}.vdi', os.path.basename(filename))
+        if not m:
+            raise RuntimeError, \
+                  "Unknown filename type to convert to UUID: %s" % filename
+        return m.group(1)
+
+    def garbage_collect_hdds(self, image_name):
+        """Checks if there are differential images leftovers from previous
+        attach/detach operations that are not currently associated to a VM."""
+        snapshot_directory = os.path.join(self.vbox_home, 'Machines',
+            image_name, 'Snapshots')
+        if not os.path.exists(snapshot_directory):
+            return
+        for filename in os.listdir(snapshot_directory):
+            full_hdd_path = os.path.abspath(os.path.join(snapshot_directory,
+                                                         filename))
+            p = subprocess.Popen(['VBoxManage', '-nologo',
+                                  '-convertSettingsBackup',
+                                  'showhdinfo', full_hdd_path],
+                             stdout=subprocess.PIPE)
+            output = p.communicate()[0]
+            if re.search(r'In use by VMs:', output):
+                continue
+            uuid = self._uuid_from_filename(filename)
+            Logger().info("Removing unused differential harddisk '%s'", uuid)
+            self.discard_hdd(uuid)
+            os.unlink(full_hdd_path)
+
+    def discard_hdd(self, identifier):
+        """Unregisters a hard disk image from the VBox media registry."""
+        guarded_vboxmanage_call(['closemedium', 'disk', identifier])
 
     # The machine-readable output of VBoxManage showvminfo needs severe fixups
     # to be used as input for modifyvm's command-line interface.  The following
