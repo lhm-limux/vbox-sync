@@ -1,4 +1,4 @@
-This package was debianized by Philipp Kern <pkern@simplex> on
+This package was debianized by Philipp Kern <philipp.kern@itomig.de> on
 Sat, 16 May 2009 11:18:57 +0200.
 
 Upstream Author:
@@ -28,6 +28,6 @@ License:
     See the Licence for the specific language governing
     permissions and limitations under the Licence.
 
-The Debian packaging is copyright 2009, Philipp Kern <pkern@simplex> and
-is licensed under the GPL, see `/usr/share/common-licenses/GPL'.
+The Debian packaging is copyright 2009, Philipp Kern <philipp.kern@itomig.de>
+and is likewise licensed under the EUPL.
 
