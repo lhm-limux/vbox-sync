@@ -8,5 +8,6 @@ Standards-Version: 3.8.0
 Package: freedos-vbox
 Architecture: all
 Depends: ${misc:Depends}, vbox-sync-helper
-Description: <insert up to 60 chars description>
- <insert long description, indented with spaces>
+Description: FreeDOS for VirtualBox
+ Retrieves the FreeDOS image for VirtualBox from the central rsync
+ repository and offers you access through the `freedos' command.
