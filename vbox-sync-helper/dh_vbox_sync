@@ -1,0 +1,110 @@
+#!/usr/bin/perl
+
+# © 2009 Philipp Kern <philipp.kern@itomig.de>
+#
+# Licensed under the EUPL, Version 1.0 or – as soon they
+# will be approved by the European Commission - subsequent
+# versions of the EUPL (the "Licence");
+# you may not use this work except in compliance with the
+# Licence.
+# You may obtain a copy of the Licence at:
+# 
+# http://ec.europa.eu/idabc/eupl
+# 
+# Unless required by applicable law or agreed to in
+# writing, software distributed under the Licence is
+# distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+# express or implied.
+# See the Licence for the specific language governing
+# permissions and limitations under the Licence.
+# Licensed under the EUPL.
+#
+# If this script is to be integrated into other packaging tools it can
+# also be relicensed under the terms of the GPL-2, as allowed by the EUPL.
+
+=head1 NAME
+
+dh_vbox_sync - create postinst and postrm for vbox-sync-based packages
+
+=cut
+
+use warnings;
+use strict;
+use Debian::Debhelper::Dh_Lib;
+use File::Find;
+use File::stat;
+
+=head1 SYNOPSIS
+
+B<dh_vbox_sync> [S<I<debhelper options>>] S<I<image>> [S<I<version>>]
+
+=head1 DESCRIPTION
+
+dh_vbox_sync is a debhelper program which creates the postinst and postrm
+maintainer scripts for vbox-sync-based packages.  The postinst will be
+used to sync the image from the remote rsync server by calling vbox-sync
+with the parameters as passed to this script.  The postrm will remove
+the images from the local machine by calling vbox-dispose.
+
+The version will be deduced from the source package's version if not
+specified, stripping the Debian revision.
+
+=head1 OPTIONS
+
+=over 4
+
+=item S<I<image>>
+
+The name of the image to sync, as passed to the vbox-sync utilities.
+
+=item S<I<version>>
+
+(optional) The version of the image to retrieve.  This will normally
+be deduced from the source package's version.  In this case the Debian
+revision is stripped.  (For example I<1.0-1> gets I<1.0>.)
+
+=back
+
+=cut
+
+init();
+
+if(!defined($ARGV[0])) {
+	error("image name not specified")
+}
+my $image = $ARGV[0];
+my $version = undef;
+if(defined($ARGV[1])) {
+	$version = $ARGV[1];
+}
+
+foreach my $package (@{$dh{DOPACKAGES}}) {
+	my $tmp = tmpdir($package);
+
+	if(!defined($version)) {
+		# call isnative to get $dh{VERSION} (from dh_makeshlibs)
+		isnative($package);
+		$version = $dh{VERSION};
+		# strip Debian revision (dito)
+		$version =~ s/-[^-]+$//;
+	}
+
+	autoscript($package, "postinst", "postinst-vbox-sync",
+		"s/#IMAGE#/$image/;s/#VERSION#/$version/");
+	autoscript($package, "postrm", "postrm-vbox-sync",
+		"s/#IMAGE#/$image/;s/#VERSION#/$version/");
+}
+
+=head1 SEE ALSO
+
+L<vbox-sync(8)>, L<vbox-dispose(8)>
+
+This program is a part of vbox-sync-helper.
+
+=head1 AUTHOR
+
+Philipp Kern <philipp.kern@itomig.de> for the LiMux project of the City of
+Munich.
+
+=cut

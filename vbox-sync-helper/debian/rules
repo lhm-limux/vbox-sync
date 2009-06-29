@@ -34,7 +34,17 @@ install:
 		"$(CURDIR)/debian/vbox-sync-helper/usr/sbin"
 	mv -v "$(CURDIR)/debian/vbox-sync-helper/usr/bin/vbox-dispose" \
 		"$(CURDIR)/debian/vbox-sync-helper/usr/sbin"
-
+	
+	# Install the debhelper addon.
+	cp -v "$(CURDIR)/dh_vbox_sync" \
+		"$(CURDIR)/debian/vbox-sync-helper/usr/bin"
+	cp -v "$(CURDIR)/dh_vbox_sync.autoscript.postinst" \
+		"$(CURDIR)/debian/vbox-sync-helper/usr/share/debhelper/autoscripts/postinst-vbox-sync"
+	cp -v "$(CURDIR)/dh_vbox_sync.autoscript.postrm" \
+		"$(CURDIR)/debian/vbox-sync-helper/usr/share/debhelper/autoscripts/postrm-vbox-sync"
+	pod2man dh_vbox_sync -c Debhelper -r $(VERSION) --section=1 \
+		> "$(CURDIR)/debian/vbox-sync-helper/usr/share/man/man1/dh_vbox_sync.1"
+	
 	# Write the package version into the itomig.vbox module.
 	find "$(CURDIR)/debian/vbox-sync-helper" -name 'vbox.py' | \
 		xargs sed -i -e 's,@VERSION@,$(VERSION),g'

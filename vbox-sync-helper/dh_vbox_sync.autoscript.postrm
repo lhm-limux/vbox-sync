@@ -1,0 +1,6 @@
+if ! [ "$1" = "remove" ]
+then
+    exit 0
+fi
+
+vbox-dispose #IMAGE# #VERSION#
