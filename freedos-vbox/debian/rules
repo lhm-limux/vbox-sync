@@ -9,7 +9,6 @@
 
 PACKAGE=$(shell dpkg-parsechangelog | sed -ne 's/Source: *\(.*\) *$$/\1/p')
 IMAGE=$(shell echo $(PACKAGE) | sed -ne 's/-vbox$$//p')
-VERSION=$(shell dpkg-parsechangelog | sed -ne 's/Version: *\(.*\) *$$/\1/p')
 
 build: build-stamp
 build-stamp:
@@ -37,13 +36,6 @@ install: build
 	dh_prep
 	dh_installdirs
 
-	# Add here commands to install the package into debian/<packagename>.
-	#$(MAKE) prefix=`pwd`/debian/`dh_listpackages`/usr instal
-	echo '#!/bin/sh' > '$(CURDIR)/debian/$(PACKAGE)/usr/bin/$(IMAGE)'
-	echo 'vbox-invoke $(IMAGE) $(VERSION)' >> '$(CURDIR)/debian/$(PACKAGE)/usr/bin/$(IMAGE)'
-	chmod 0755 '$(CURDIR)/debian/$(PACKAGE)/usr/bin/$(IMAGE)'
-
-
 # Build architecture-independent files here.
 binary-indep: build install
 	dh_testdir
@@ -51,34 +43,12 @@ binary-indep: build install
 	dh_installchangelogs
 	dh_installdocs
 	dh_installexamples
-#	dh_installmenu
-#	dh_installdebconf
-#	dh_installlogrotate
-#	dh_installemacsen
-#	dh_installcatalogs
-#	dh_installpam
-#	dh_installmime
-#	dh_installinit
-#	dh_installcron
-#	dh_installinfo
-#	dh_installwm
-#	dh_installudev
-#	dh_lintian
-#	dh_undocumented
 	dh_installman
 	dh_link
 	dh_compress
 	dh_fixperms
-#	dh_perl
-#	dh_python
+	dh_vbox_sync $(IMAGE)
 	dh_installdeb
-	echo '#!/bin/sh' >> '$(CURDIR)/debian/$(PACKAGE)/DEBIAN/postinst'
-	echo 'vbox-sync $(IMAGE) $(VERSION)' >> '$(CURDIR)/debian/$(PACKAGE)/DEBIAN/postinst'
-	chmod 0755 '$(CURDIR)/debian/$(PACKAGE)/DEBIAN/postinst'
-	echo '#!/bin/bash' >> '$(CURDIR)/debian/$(PACKAGE)/DEBIAN/postrm'
-	echo 'if ! [ "$$1" = "remove" ]; then exit 0; fi' >> '$(CURDIR)/debian/$(PACKAGE)/DEBIAN/postrm'
-	echo 'vbox-dispose $(IMAGE) $(VERSION)' >> '$(CURDIR)/debian/$(PACKAGE)/DEBIAN/postrm'
-	chmod 0755 '$(CURDIR)/debian/$(PACKAGE)/DEBIAN/postrm'
 	dh_gencontrol
 	dh_md5sums
 	dh_builddeb
