@@ -94,6 +94,7 @@ foreach my $package (@{$dh{DOPACKAGES}}) {
 		"s/#IMAGE#/$image/;s/#VERSION#/$version/");
 	autoscript($package, "postrm", "postrm-vbox-sync",
 		"s/#IMAGE#/$image/;s/#VERSION#/$version/");
+	addsubstvar($package, "misc:Image", $image);
 }
 
 =head1 SEE ALSO
