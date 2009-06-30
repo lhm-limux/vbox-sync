@@ -1,0 +1,8 @@
+#!/bin/sh -e
+
+#DEBHELPER#
+
+# Force the postinst foo of python-support to be able to call the
+# scripts from postinst of dependent packages.
+update-python-modules -p
+
