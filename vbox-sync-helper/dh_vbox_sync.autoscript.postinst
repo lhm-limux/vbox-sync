@@ -1,1 +1,1 @@
-vbox-invoke #IMAGE# #VERSION#
+vbox-sync #IMAGE# #VERSION#
