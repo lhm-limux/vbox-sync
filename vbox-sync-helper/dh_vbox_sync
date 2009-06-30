@@ -82,7 +82,7 @@ if(defined($ARGV[1])) {
 foreach my $package (@{$dh{DOPACKAGES}}) {
 	my $tmp = tmpdir($package);
 
-	if(!defined($version)) {
+	if (!defined($version)) {
 		# call isnative to get $dh{VERSION} (from dh_makeshlibs)
 		isnative($package);
 		$version = $dh{VERSION};
@@ -95,6 +95,13 @@ foreach my $package (@{$dh{DOPACKAGES}}) {
 	autoscript($package, "postrm", "postrm-vbox-sync",
 		"s/#IMAGE#/$image/;s/#VERSION#/$version/");
 	addsubstvar($package, "misc:Image", $image);
+
+	doit("install", "-d", "$tmp/usr/bin");
+	open (SCRIPT, ">$tmp/usr/bin/$image");
+	print SCRIPT "#!/bin/sh\n";
+	print SCRIPT "vbox-invoke $image $version\n";
+	close SCRIPT;
+	doit("chmod 0755 $tmp/usr/bin/$image");
 }
 
 =head1 SEE ALSO
