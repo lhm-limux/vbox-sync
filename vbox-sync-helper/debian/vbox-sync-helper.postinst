@@ -4,5 +4,9 @@
 
 # Force the postinst foo of python-support to be able to call the
 # scripts from postinst of dependent packages.
-update-python-modules -p
-
+# This is only done with python-support >= 0.8.0, earlier versions do not have
+# this feature (and most likely no need for it, as there are no triggers yet)
+if dpkg --compare-versions  "$(dpkg-query -f '${Version}' -W python-support)" ">=" 0.8.0
+then
+	update-python-modules --post-install
+fi
