@@ -25,7 +25,10 @@ from itomig.vbox import Logger
 
 import os.path
 
-__VERSION__ = "@VERSION@"
+import pygtk
+pygtk.require("2.0")
+import gtk
+import gtk.glade
 
 class VBoxSyncAdminGui(object):
     def __init__(self, config):
@@ -35,6 +38,12 @@ class VBoxSyncAdminGui(object):
         gladefile = os.path.join(os.path.dirname(__file__),"vbox-sync-admin.glade")
         assert os.path.exists(gladefile)
 
+        self.wTree = gtk.glade.XML(gladefile)
+        self.window = self.wTree.get_widget("vboxsyncadminwindow")
+
+        self.window.show()
+
+
     def main(self):
-        pass
+        gtk.main()
 
