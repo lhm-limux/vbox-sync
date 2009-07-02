@@ -30,7 +30,7 @@
                         <child>
                           <widget class="GtkLabel" id="label15">
                             <property name="visible">True</property>
-                            <property name="label" translatable="yes">Bitte w&#xE4;hlen Sie unter den Installierten VirtualBox-Images jenes, das Sie ver&#xE4;ndern m&#xF6;chten. Auch um ein neues Paket zu erstellen, w&#xE4;hlen Sie bitte die gew&#xFC;nschte Grundlage.</property>
+                            <property name="label" translatable="yes">Bitte w&#xE4;hlen Sie unter den installierten VirtualBox-Images jenes, das Sie ver&#xE4;ndern m&#xF6;chten. Auch um ein neues Paket zu erstellen, w&#xE4;hlen Sie bitte die gew&#xFC;nschte Grundlage.</property>
                             <property name="use_markup">True</property>
                             <property name="wrap">True</property>
                           </widget>
@@ -377,6 +377,7 @@
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
                 <property name="use_stock">True</property>
+                <property name="image_position">right</property>
               </widget>
               <packing>
                 <property name="expand">False</property>
