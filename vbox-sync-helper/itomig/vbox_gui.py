@@ -23,12 +23,17 @@
 
 from itomig.vbox import Logger
 
+import os.path
+
 __VERSION__ = "@VERSION@"
 
 class VBoxSyncAdminGui(object):
     def __init__(self, config):
         self.config = config
         self.logger = Logger()
+
+        gladefile = os.path.join(os.path.dirname(__file__),"vbox-sync-admin.glade")
+        assert os.path.exists(gladefile)
 
     def main(self):
         pass
