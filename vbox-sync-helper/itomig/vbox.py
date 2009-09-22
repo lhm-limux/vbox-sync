@@ -172,6 +172,8 @@ class VBoxImage(object):
         self.logger = Logger()
         self.disks = dict()
 
+        self.admin_mode = 0
+
         # For the purposes of the GUI, we also want to know the name of the
         # Debian package that we were shipped in. We find out about that here,
         # using some common sense
@@ -193,10 +195,15 @@ class VBoxImage(object):
         return '%s.vdi' % self.image_name
 
     def _target_path(self, filename=None):
-        if filename:
-            return os.path.join(self.config.target, self.image_name, filename)
+        if self.admin_mode:
+            path = self._vbox_home()
         else:
-            return os.path.join(self.config.target, self.image_name)
+            path = os.path.join(self.config.target, self.image_name)
+
+        if filename:
+            path = os.path.join(path, filename)
+        
+        return path
 
     def vdi_path(self):
         return self._target_path(self.vdi_filename())
@@ -215,7 +222,10 @@ class VBoxImage(object):
         self._make_vdi_immutable()
 
     def _vbox_home(self):
-        path = '~/.VirtualBox-%s' % self.image_name
+        if self.admin_mode:
+            path = '~/.VirtualBox-%s-admin' % self.image_name
+        else:
+            path = '~/.VirtualBox-%s' % self.image_name
         return os.path.abspath(os.path.expanduser(path))
 
     def _ensure_vbox_home(self):
