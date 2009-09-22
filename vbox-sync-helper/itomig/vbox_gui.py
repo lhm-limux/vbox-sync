@@ -86,7 +86,7 @@ class VBoxSyncAdminGui(object):
             self.switch_to(0)
         
         elif self.current_state() == 2:
-            dialogued_action("Removing copied system images",
+            dialogued_action("Entferne Kopie des Systemimages.",
                              self.image.leave_admin_mode)
             self.switch_to(1)
 
@@ -105,7 +105,7 @@ class VBoxSyncAdminGui(object):
             self.switch_to(2)
 
     def on_exit(self, widget):
-        dialogued_action("Cleaning up temporary files",
+        dialogued_action("Räume temporäre Dateien auf.",
                          self.cleanup)
         gtk.main_quit()
 
@@ -127,7 +127,7 @@ class VBoxSyncAdminGui(object):
         if new_state == 2:
             assert self.image
 
-            dialogued_action( "Copying original image (this may take a while)",
+            dialogued_action( "Kopiere Orginal-Systemimage (Dies kann eine Weile dauern).",
                                self.image.prepare_admin_mode )
 
         self.wTree.get_widget("notebook").set_current_page(new_state)
