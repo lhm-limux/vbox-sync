@@ -36,6 +36,7 @@ import optparse
 import os
 import os.path
 import subprocess
+import shutil
 import sys
 import tempfile
 import re
@@ -172,7 +173,7 @@ class VBoxImage(object):
         self.logger = Logger()
         self.disks = dict()
 
-        self.admin_mode = 0
+        self.admin_mode = False
 
         # For the purposes of the GUI, we also want to know the name of the
         # Debian package that we were shipped in. We find out about that here,
@@ -382,6 +383,23 @@ class VBoxImage(object):
                     raise
                 self.logger.warn('%s not empty, thus not removed.',
                                  self._target_path())
+
+    def prepare_admin_mode(self):
+        assert not self.admin_mode
+
+        sys_vdi = self.vdi_path()
+        sys_cfg = self.cfg_path()
+
+        self.admin_mode = True
+
+        self._ensure_vbox_home()
+
+        admin_vdi = self.vdi_path()
+        admin_cfg = self.cfg_path()
+
+        shutil.copyfile(sys_vdi, admin_vdi)
+        shutil.copyfile(sys_cfg, admin_cfg)
+
 
 class VBoxRegistry(object):
     # XXX: handle failures
