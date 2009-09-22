@@ -51,6 +51,7 @@ class VBoxSyncAdminGui(object):
         window.connect("destroy", gtk.main_quit)
 
         self.wTree.get_widget("forwardbutton").connect("clicked", self.on_forward)
+        self.wTree.get_widget("backbutton").connect("clicked", self.on_backward)
 
         self.switch_to(0)
 
@@ -63,6 +64,11 @@ class VBoxSyncAdminGui(object):
 
     def current_state(self):
         return self.wTree.get_widget("notebook").get_current_page()
+
+    def on_backward(self, button):
+        if self.current_state() == 1:
+            # Nothing to clean up here
+            self.switch_to(0)
 
     def on_forward(self, button):
         if self.current_state() == 0:
