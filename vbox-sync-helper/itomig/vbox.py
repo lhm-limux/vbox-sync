@@ -303,14 +303,17 @@ class VBoxImage(object):
 
     def _register_disks(self):
         for disk in self.disks:
-            if disk == 'system':
+            if disk == 'system' and not self.admin_mode:
                 disk_type = 'immutable'
+            elif disk == 'system' and self.admin_mode:
+                disk_type = 'writethrough'
             elif disk == 'data':
                 # TODO: Do we want that?  Causes it to be unaffected by
                 # snapshots.
                 disk_type = 'writethrough'
             else:
                 disk_type = 'normal'
+            print disk, disk_type
             self.vbox_registry.register_hdd(self.disks[disk], disk_type)
 
     def _read_cfg(self):
@@ -351,7 +354,11 @@ class VBoxImage(object):
             raise ImageNotFoundError
         self.disks['system'] = self.vdi_path()
 
-    def invoke(self):
+    def invoke(self, use_exec=True):
+        """
+        Invokes the virtual machine in this image. If the parameter exec is
+        true, the current process will be replaced.
+        """
         self._ensure_vbox_home()
         self.vbox_registry = VBoxRegistry(self._vbox_home())
         self._ensure_system_disk()
@@ -361,8 +368,10 @@ class VBoxImage(object):
         self.vbox_registry.garbage_collect_hdds(self.image_name)
         # Using execlp to replace the current process image.
         # XXX: do we want that?  function does not return
-        os.execlp('VBoxManage', 'VBoxManage', '-nologo',
-                  'startvm', self.image_name)
+        if use_exec:
+            os.execlp('VBoxManage', 'VBoxManage', '-nologo', 'startvm', self.image_name)
+        else:
+            os.spawnlp('VBoxManage', 'VBoxManage', '-nologo', 'startvm', self.image_name)
         # TODO: make this configurable to either use SDL or VBox proper
         #os.execlp('vboxsdl', '-vm', self.image_name)
 

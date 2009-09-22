@@ -33,7 +33,7 @@ import gobject
 import threading
 
 def dialogued_action(text, action):
-    dlg = gtk.MessageDialog()
+    dlg = gtk.MessageDialog(flags = gtk.DIALOG_MODAL)
     dlg.props.text = text
     
     class Thread(threading.Thread):
@@ -67,6 +67,7 @@ class VBoxSyncAdminGui(object):
 
         self.wTree.get_widget("forwardbutton").connect("clicked", self.on_forward)
         self.wTree.get_widget("backbutton").connect("clicked", self.on_backward)
+        self.wTree.get_widget("executebutton").connect("clicked", self.on_execute)
 
         self.switch_to(0)
 
@@ -131,6 +132,12 @@ class VBoxSyncAdminGui(object):
                                self.image.prepare_admin_mode )
 
         self.wTree.get_widget("notebook").set_current_page(new_state)
+
+    def on_execute(self, widget):
+        assert self.current_state() == 2
+
+        dialogued_action("Starte VirtualBox",
+                         lambda: self.image.invoke( use_exec=False ))
 
     def main(self):
         gtk.gdk.threads_init()
