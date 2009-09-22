@@ -30,6 +30,7 @@ pygtk.require("2.0")
 import gtk
 import gtk.glade
 import gobject
+import threading
 
 class VBoxSyncAdminGui(object):
     def __init__(self, config):
@@ -81,6 +82,9 @@ class VBoxSyncAdminGui(object):
 
             self.switch_to(1)
 
+        elif self.current_state() == 1:
+            self.switch_to(2)
+                
     def switch_to(self, new_state):
         if new_state == 0:
             self.fill_list_of_images()
@@ -91,8 +95,29 @@ class VBoxSyncAdminGui(object):
             self.wTree.get_widget("packageentry").set_text(self.image.package_name)
             self.wTree.get_widget("versionentry").set_text(self.image.image_version)
 
+        if new_state == 2:
+            assert self.image
+
+            class Copier(threading.Thread):
+                def __init__(self, image, ret):
+                    threading.Thread.__init__(self)
+                    self.image = image
+                    self.ret = ret
+                def run(self):
+                    self.image.prepare_admin_mode()
+                    self.ret()
+
+            dlg = gtk.MessageDialog()
+            dlg.props.text = "Copying original image (this may take a while)"
+            
+            thread = Copier(self.image, lambda: dlg.destroy()).start()
+            dlg.run()
+
+            slg.destroy()
+
         self.wTree.get_widget("notebook").set_current_page(new_state)
 
     def main(self):
+        gtk.gdk.threads_init()
         gtk.main()
 
