@@ -34,7 +34,8 @@ import threading
 import tempfile
 import gzip
 import subprocess
-import glob
+from glob import glob
+import shutil
 
 class PackageBuildingError(Exception):
     """This exception is thrown when someting goes wrong in the automated
@@ -128,7 +129,7 @@ class VBoxSyncAdminGui(object):
 
     def cleanup(self):
         # In case of abortion
-        if self.current_state() == 2:
+        if self.current_state() >= 2:
             self.image.leave_admin_mode()
                 
     def switch_to(self, new_state):
@@ -256,6 +257,13 @@ binary: binary-indep binary-arch
             os.chdir("/")
             shutil.rmtree(tmpdir)
 
+        dlg = gtk.MessageDialog(flags = gtk.DIALOG_MODAL, buttons = gtk.BUTTONS_OK)
+        dlg.props.text = \
+         "Paket erfolgreich gebaut und an den Verantwortlichen " + \
+         "geschickt, sowie das VirtualBox-Image in das entsprechende Verzeichnis geschoben"""
+        dlg.run()
+        self.cleanup()
+        gtk.main_quit()
 
     def main(self):
         gtk.gdk.threads_init()
