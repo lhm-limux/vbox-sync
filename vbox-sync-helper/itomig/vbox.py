@@ -400,6 +400,17 @@ class VBoxImage(object):
         shutil.copyfile(sys_vdi, admin_vdi)
         shutil.copyfile(sys_cfg, admin_cfg)
 
+    def leave_admin_mode(self):
+        assert self.admin_mode
+
+        if os.path.exists(self.vdi_path()):
+            os.remove(self.vdi_path())
+        if os.path.exists(self.cfg_path()):
+            os.remove(self.cfg_path())
+        shutil.rmtree(self._vbox_home())
+
+        self.admin_mode = False
+
 
 class VBoxRegistry(object):
     # XXX: handle failures

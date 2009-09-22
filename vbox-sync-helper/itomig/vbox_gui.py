@@ -49,7 +49,9 @@ class VBoxSyncAdminGui(object):
 
         window = self.wTree.get_widget("vboxsyncadminwindow")
         # TODO Check for unsaved data here?
-        window.connect("destroy", gtk.main_quit)
+        window.connect("destroy", self.on_exit)
+        self.wTree.get_widget("cancelbutton").connect("clicked", self.on_exit)
+        
 
         self.wTree.get_widget("forwardbutton").connect("clicked", self.on_forward)
         self.wTree.get_widget("backbutton").connect("clicked", self.on_backward)
@@ -70,6 +72,10 @@ class VBoxSyncAdminGui(object):
         if self.current_state() == 1:
             # Nothing to clean up here
             self.switch_to(0)
+        
+        elif self.current_state() == 2:
+            self.image.leave_admin_mode()
+            self.switch_to(1)
 
     def on_forward(self, button):
         if self.current_state() == 0:
@@ -84,6 +90,15 @@ class VBoxSyncAdminGui(object):
 
         elif self.current_state() == 1:
             self.switch_to(2)
+
+    def on_exit(self, widget):
+        self.cleanup()
+        gtk.main_quit()
+
+    def cleanup(self):
+        # In case of abortion
+        if self.current_state() == 2:
+            self.image.leave_admin_mode()
                 
     def switch_to(self, new_state):
         if new_state == 0:
@@ -112,8 +127,6 @@ class VBoxSyncAdminGui(object):
             
             thread = Copier(self.image, lambda: dlg.destroy()).start()
             dlg.run()
-
-            slg.destroy()
 
         self.wTree.get_widget("notebook").set_current_page(new_state)
 
