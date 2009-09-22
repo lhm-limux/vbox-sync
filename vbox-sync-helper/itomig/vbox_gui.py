@@ -54,6 +54,7 @@ class VBoxSyncAdminGui(object):
         window.show()
 
     def fill_list_of_images(self):
+        self.imagestore.clear()
         for image in VBoxImageFinder(self.config).find_images():
             self.imagestore.append(( image , image.name() ))
 
