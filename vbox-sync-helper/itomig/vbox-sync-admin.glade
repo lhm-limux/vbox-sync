@@ -224,7 +224,9 @@
                         <child>
                           <widget class="GtkLabel" id="label13">
                             <property name="visible">True</property>
-                            <property name="label" translatable="yes">Sie k&#xF6;nnen jetzt VirtualBox im Admin-Modus starten. In diesem Modus ist die C:\-Partition beschreibbar. Diese &#xC4;nderungen werden dann sp&#xE4;ter verteilt. &#xC4;nderungen im Benutzerprofil (D:\) werden dagegen verworfen.</property>
+                            <property name="label" translatable="yes">Sie k&#xF6;nnen jetzt VirtualBox im Admin-Modus starten. In diesem Modus ist die C:\-Partition beschreibbar. Diese &#xC4;nderungen werden dann sp&#xE4;ter verteilt. &#xC4;nderungen im Benutzerprofil (D:\) werden dagegen verworfen.
+
+Bitte beenden Sie VirtualBox, bevor sie hier fortfahren.</property>
                             <property name="use_markup">True</property>
                             <property name="wrap">True</property>
                           </widget>
@@ -234,7 +236,7 @@
                         </child>
                         <child>
                           <widget class="GtkButton" id="executebutton">
-                            <property name="label" translatable="yes">gtk-execute</property>
+                            <property name="label">gtk-execute</property>
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
                             <property name="receives_default">True</property>
@@ -302,7 +304,7 @@
                         </child>
                         <child>
                           <widget class="GtkButton" id="okbutton">
-                            <property name="label" translatable="yes">gtk-ok</property>
+                            <property name="label">gtk-ok</property>
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
                             <property name="receives_default">True</property>
@@ -358,7 +360,7 @@
             <property name="spacing">2</property>
             <child>
               <widget class="GtkButton" id="cancelbutton">
-                <property name="label" translatable="yes">gtk-cancel</property>
+                <property name="label">gtk-cancel</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
@@ -372,7 +374,7 @@
             </child>
             <child>
               <widget class="GtkButton" id="forwardbutton">
-                <property name="label" translatable="yes">gtk-go-forward</property>
+                <property name="label">gtk-go-forward</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
@@ -389,7 +391,7 @@
             </child>
             <child>
               <widget class="GtkButton" id="backbutton">
-                <property name="label" translatable="yes">gtk-go-back</property>
+                <property name="label">gtk-go-back</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
