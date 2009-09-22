@@ -174,7 +174,7 @@ class VBoxImage(object):
 
     def name(self):
         """ A descripive name of the image, for display in GUIs etc. """
-        return "%s (%s)" % (self.image_name, self.image_version)
+        return "%s (Version %s)" % (self.image_name, self.image_version)
 
     def cfg_filename(self):
         return '%s.cfg' % self.image_name
