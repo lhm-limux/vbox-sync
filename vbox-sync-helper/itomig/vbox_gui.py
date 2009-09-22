@@ -94,12 +94,11 @@ class VBoxSyncAdminGui(object):
 
     def on_backward(self, button):
         if self.current_state() == 1:
-            # Nothing to clean up here
+            dialogued_action("Entferne Kopie des Systemimages.",
+                             self.image.leave_admin_mode)
             self.switch_to(0)
         
         elif self.current_state() == 2:
-            dialogued_action("Entferne Kopie des Systemimages.",
-                             self.image.leave_admin_mode)
             self.switch_to(1)
 
         elif self.current_state() == 3:
@@ -129,7 +128,7 @@ class VBoxSyncAdminGui(object):
 
     def cleanup(self):
         # In case of abortion
-        if self.current_state() >= 2:
+        if self.current_state() >= 1:
             self.image.leave_admin_mode()
                 
     def switch_to(self, new_state):
@@ -139,19 +138,18 @@ class VBoxSyncAdminGui(object):
 
         elif new_state == 1:
             assert self.image
-            self.wTree.get_widget("packageentry").set_text(self.image.package_name)
-            self.wTree.get_widget("versionentry").set_text(self.image.image_version)
-
-        elif new_state == 2:
-            assert self.image
 
             dialogued_action( "Kopiere Orginal-Systemimage (Dies kann eine Weile dauern).",
                                self.image.prepare_admin_mode )
+        elif new_state == 2:
+            assert self.image
+            self.wTree.get_widget("packageentry").set_text(self.image.package_name)
+            self.wTree.get_widget("versionentry").set_text(self.image.image_version)
 
         self.wTree.get_widget("notebook").set_current_page(new_state)
 
     def on_execute(self, widget):
-        assert self.current_state() == 2
+        assert self.current_state() == 1
 
         dialogued_action("Starte VirtualBox",
                          lambda: self.image.invoke( use_exec=False ))
