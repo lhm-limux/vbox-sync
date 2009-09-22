@@ -40,6 +40,8 @@ class VBoxSyncAdminGui(object):
 
         self.wTree = gtk.glade.XML(gladefile)
         self.window = self.wTree.get_widget("vboxsyncadminwindow")
+        # TODO Check for unsaved data here?
+        self.window.connect("destroy", gtk.main_quit)
 
         self.window.show()
 
