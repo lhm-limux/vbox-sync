@@ -32,6 +32,18 @@ import gtk.glade
 import gobject
 import threading
 
+def dialogued_action(text, action):
+    dlg = gtk.MessageDialog()
+    dlg.props.text = text
+    
+    class Thread(threading.Thread):
+        def run(self):
+            action()
+            dlg.destroy()
+
+    thread = Thread().start()
+    dlg.run()
+
 class VBoxSyncAdminGui(object):
     def __init__(self, config):
         self.config = config
@@ -74,7 +86,8 @@ class VBoxSyncAdminGui(object):
             self.switch_to(0)
         
         elif self.current_state() == 2:
-            self.image.leave_admin_mode()
+            dialogued_action("Removing copied system images",
+                             self.image.leave_admin_mode)
             self.switch_to(1)
 
     def on_forward(self, button):
@@ -92,7 +105,8 @@ class VBoxSyncAdminGui(object):
             self.switch_to(2)
 
     def on_exit(self, widget):
-        self.cleanup()
+        dialogued_action("Cleaning up temporary files",
+                         self.cleanup)
         gtk.main_quit()
 
     def cleanup(self):
@@ -113,20 +127,8 @@ class VBoxSyncAdminGui(object):
         if new_state == 2:
             assert self.image
 
-            class Copier(threading.Thread):
-                def __init__(self, image, ret):
-                    threading.Thread.__init__(self)
-                    self.image = image
-                    self.ret = ret
-                def run(self):
-                    self.image.prepare_admin_mode()
-                    self.ret()
-
-            dlg = gtk.MessageDialog()
-            dlg.props.text = "Copying original image (this may take a while)"
-            
-            thread = Copier(self.image, lambda: dlg.destroy()).start()
-            dlg.run()
+            dialogued_action( "Copying original image (this may take a while)",
+                               self.image.prepare_admin_mode )
 
         self.wTree.get_widget("notebook").set_current_page(new_state)
 
