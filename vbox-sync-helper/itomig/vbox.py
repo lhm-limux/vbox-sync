@@ -313,7 +313,6 @@ class VBoxImage(object):
                 disk_type = 'writethrough'
             else:
                 disk_type = 'normal'
-            print disk, disk_type
             self.vbox_registry.register_hdd(self.disks[disk], disk_type)
 
     def _read_cfg(self):

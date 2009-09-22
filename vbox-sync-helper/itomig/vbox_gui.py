@@ -31,6 +31,15 @@ import gtk
 import gtk.glade
 import gobject
 import threading
+import tempfile
+import gzip
+import subprocess
+import glob
+
+class PackageBuildingError(Exception):
+    """This exception is thrown when someting goes wrong in the automated
+    package building process."""
+    pass
 
 def dialogued_action(text, action):
     dlg = gtk.MessageDialog(flags = gtk.DIALOG_MODAL)
@@ -68,6 +77,7 @@ class VBoxSyncAdminGui(object):
         self.wTree.get_widget("forwardbutton").connect("clicked", self.on_forward)
         self.wTree.get_widget("backbutton").connect("clicked", self.on_backward)
         self.wTree.get_widget("executebutton").connect("clicked", self.on_execute)
+        self.wTree.get_widget("okbutton").connect("clicked", self.on_upload)
 
         self.switch_to(0)
 
@@ -91,6 +101,9 @@ class VBoxSyncAdminGui(object):
                              self.image.leave_admin_mode)
             self.switch_to(1)
 
+        elif self.current_state() == 3:
+            self.switch_to(2)
+
     def on_forward(self, button):
         if self.current_state() == 0:
             # Advancing from the image selecting frame
@@ -104,6 +117,9 @@ class VBoxSyncAdminGui(object):
 
         elif self.current_state() == 1:
             self.switch_to(2)
+
+        elif self.current_state() == 2:
+            self.switch_to(3)
 
     def on_exit(self, widget):
         dialogued_action("Räume temporäre Dateien auf.",
@@ -120,12 +136,12 @@ class VBoxSyncAdminGui(object):
             self.fill_list_of_images()
             self.image = None
 
-        if new_state == 1:
+        elif new_state == 1:
             assert self.image
             self.wTree.get_widget("packageentry").set_text(self.image.package_name)
             self.wTree.get_widget("versionentry").set_text(self.image.image_version)
 
-        if new_state == 2:
+        elif new_state == 2:
             assert self.image
 
             dialogued_action( "Kopiere Orginal-Systemimage (Dies kann eine Weile dauern).",
@@ -138,6 +154,108 @@ class VBoxSyncAdminGui(object):
 
         dialogued_action("Starte VirtualBox",
                          lambda: self.image.invoke( use_exec=False ))
+
+    def on_upload(self, widget):
+        assert self.current_state() == 3
+
+        tmpdir = tempfile.mkdtemp('','vbox-admin-')
+        try:
+            os.chdir(tmpdir)
+
+            package_name = self.wTree.get_widget("packageentry").get_text()
+            package_version = self.wTree.get_widget("versionentry").get_text()
+            
+            os.mkdir(package_name)
+            os.chdir(package_name)
+
+            os.mkdir("debian")
+            file("debian/control", "w").write(
+"""Source: %(package_name)s
+Section: misc
+Priority: extra
+Maintainer: %(maintainer)s
+Build-Depends: debhelper (>= 7)
+Standards-Version: 3.8.2
+
+Package: %(package_name)s
+Architecture: all
+Depends: ${misc:Depends}, vbox-sync-helper
+Description: ${misc:Image} for VirtualBox
+ Retrieves the ${misc:Image} image for VirtualBox from the central rsync
+ repository and offers you access through the `${misc:Image}' command.
+""" % { 'package_name' : package_name , 'maintainer' : "TODO"} )
+
+            file("debian/rules", "w").write(
+"""#!/usr/bin/make -f
+PACKAGE=$(shell dpkg-parsechangelog | sed -ne 's/Source: *\\(.*\\) *$$/\\1/p')
+IMAGE=$(shell echo $(PACKAGE) | sed -ne 's/-vbox$$//p')
+
+build: build-stamp
+build-stamp:
+	dh_testdir
+
+	touch build-stamp
+
+clean:
+	dh_testdir
+	dh_testroot
+	rm -f build-stamp
+
+	dh_clean
+
+install: build
+	dh_testdir
+	dh_testroot
+	dh_prep
+	dh_installdirs
+
+# Build architecture-independent files here.
+binary-indep: build install
+	dh_testdir
+	dh_testroot
+	dh_installchangelogs
+	dh_installdocs
+	dh_installexamples
+	dh_installman
+	dh_link
+	dh_compress
+	dh_fixperms
+	dh_vbox_sync $(IMAGE)
+	dh_installdeb
+	dh_gencontrol
+	dh_md5sums
+	dh_builddeb
+
+binary-arch: build install
+
+binary: binary-indep binary-arch
+.PHONY: build clean binary-indep binary-arch binary install
+""")
+
+            file("debian/compat", "w").write("7")
+
+            file("debian/changelog","w").write(
+                gzip.GzipFile("/usr/share/doc/%s/changelog.gz" % self.image.package_name, "r").read())
+
+            retcode = subprocess.call(['debchange','--newversion',package_version,'--no-auto-nmu','--preserve','--release-heuristic','log','TODO'])
+            if retcode != 0:
+                raise PackageBuildingError("debchange call failed")
+
+            retcode = subprocess.call(['dpkg-buildpackage','-uc','-us'])
+            if retcode != 0:
+                raise PackageBuildingError("dpkg-buildpackage call failed")
+
+            os.chdir("..")
+
+            # Now look for the produced files
+            generated_files = glob("*.changes") + glob("*.deb") + glob("*.dsc") + glob("*.tar.gz")
+            # TODO Send generated_files by mail
+            # TODO Copy images to upload directory
+        
+        finally:
+            os.chdir("/")
+            shutil.rmtree(tmpdir)
+
 
     def main(self):
         gtk.gdk.threads_init()
