@@ -47,6 +47,12 @@ class ImageNotFoundError(Exception):
     """
     pass
 
+class PackageNotFoundError(Exception):
+    """This exception is raised when, for an image found on the disk, no 
+    corresponding debian package can be found.
+    """
+    pass
+
 class RsyncError(Exception):
     """This exception is raised when the rsync invocation to fetch the
     image or to list the directory on the server fails with a different
@@ -136,6 +142,28 @@ def guarded_vboxmanage_call(args):
     if retcode != 0:
         raise VBoxInvocationError, ' '.join(cmdline)
 
+class VBoxImageFinder(object):
+    def __init__(self, config):
+        self.config = config
+
+    def find_images(self):
+        for image_name in os.listdir(self.config.target):
+            if os.path.exists( os.path.join(self.config.target, image_name, "%s.vdi" % image_name)):
+                # We need to find the version. This is getting slightly messy
+                for package_name in [ "%s-vbox" % image_name,
+                                      "vbox-%s" % image_name,
+                                      image_name ]:
+                    if os.path.exists ( os.path.join("/usr/share/doc",package_name,"changelog.gz") ):
+                        break
+                if not package_name:
+                    raise PackageNotFoundError
+                yield VBoxImage(self.config, image_name, self._version_of( package_name ))
+
+    def _version_of(self, package_name):                    
+        dpkg_pipe = subprocess.Popen(["dpkg-query", "--showformat", "${Version}", "--show", package_name], stdout=subprocess.PIPE)
+        return dpkg_pipe.communicate()[0]
+ 
+
 class VBoxImage(object):
     def __init__(self, config, image_name, image_version):
         self.config = config
@@ -143,6 +171,10 @@ class VBoxImage(object):
         self.image_version = image_version
         self.logger = Logger()
         self.disks = dict()
+
+    def name(self):
+        """ A descripive name of the image, for display in GUIs etc. """
+        return "%s (%s)" % (self.image_name, self.image_version)
 
     def cfg_filename(self):
         return '%s.cfg' % self.image_name
