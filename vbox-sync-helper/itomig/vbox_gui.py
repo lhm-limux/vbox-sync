@@ -45,11 +45,14 @@ class VBoxSyncAdminGui(object):
         tv = self.wTree.get_widget("imagetreeview")
         tv.set_model(self.imagestore)
         tv.insert_column_with_attributes(-1,"Image",gtk.CellRendererText(),text=1)
-        self.fill_list_of_images()
 
         window = self.wTree.get_widget("vboxsyncadminwindow")
         # TODO Check for unsaved data here?
         window.connect("destroy", gtk.main_quit)
+
+        self.wTree.get_widget("forwardbutton").connect("clicked", self.on_forward)
+
+        self.switch_to(0)
 
         window.show()
 
@@ -58,6 +61,29 @@ class VBoxSyncAdminGui(object):
         for image in VBoxImageFinder(self.config).find_images():
             self.imagestore.append(( image , image.name() ))
 
+    def current_state(self):
+        return self.wTree.get_widget("notebook").get_current_page()
+
+    def on_forward(self, button):
+        if self.current_state() == 0:
+            # Advancing from the image selecting frame
+            sel = self.wTree.get_widget("imagetreeview").get_selection()
+            (model,iter) = sel.get_selected()
+            if not iter:
+                return
+            self.image = model.get(iter,0)
+
+            self.switch_to(1)
+
+    def switch_to(self, new_state):
+        if new_state == 0:
+            self.fill_list_of_images()
+            self.image = None
+
+        if new_state == 1:
+            assert self.image
+
+        self.wTree.get_widget("notebook").set_current_page(new_state)
 
     def main(self):
         gtk.main()
