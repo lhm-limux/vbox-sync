@@ -21,7 +21,7 @@
 # See the Licence for the specific language governing
 # permissions and limitations under the Licence.
 
-from itomig.vbox import Logger
+from itomig.vbox import Logger, VBoxImageFinder
 
 import os.path
 
@@ -29,6 +29,7 @@ import pygtk
 pygtk.require("2.0")
 import gtk
 import gtk.glade
+import gobject
 
 class VBoxSyncAdminGui(object):
     def __init__(self, config):
@@ -39,11 +40,22 @@ class VBoxSyncAdminGui(object):
         assert os.path.exists(gladefile)
 
         self.wTree = gtk.glade.XML(gladefile)
-        self.window = self.wTree.get_widget("vboxsyncadminwindow")
-        # TODO Check for unsaved data here?
-        self.window.connect("destroy", gtk.main_quit)
 
-        self.window.show()
+        self.imagestore = gtk.ListStore(gobject.TYPE_PYOBJECT, gobject.TYPE_STRING)
+        tv = self.wTree.get_widget("imagetreeview")
+        tv.set_model(self.imagestore)
+        tv.insert_column_with_attributes(-1,"Image",gtk.CellRendererText(),text=1)
+        self.fill_list_of_images()
+
+        window = self.wTree.get_widget("vboxsyncadminwindow")
+        # TODO Check for unsaved data here?
+        window.connect("destroy", gtk.main_quit)
+
+        window.show()
+
+    def fill_list_of_images(self):
+        for image in VBoxImageFinder(self.config).find_images():
+            self.imagestore.append(( image , image.name() ))
 
 
     def main(self):
