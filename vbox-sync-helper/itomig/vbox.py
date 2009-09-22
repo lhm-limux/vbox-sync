@@ -172,6 +172,9 @@ class VBoxImage(object):
         self.logger = Logger()
         self.disks = dict()
 
+        # For the purposes of the GUI, we also want to know the name of the
+        # Debian package that we were shipped in. We find out about that here,
+        # using some common sense
         for package_name in [ "%s-vbox" % image_name,
                               "vbox-%s" % image_name,
                               image_name ]:
