@@ -172,6 +172,13 @@ class VBoxImage(object):
         self.logger = Logger()
         self.disks = dict()
 
+        for package_name in [ "%s-vbox" % image_name,
+                              "vbox-%s" % image_name,
+                              image_name ]:
+            if os.path.exists ( os.path.join("/usr/share/doc",package_name,"changelog.gz") ):
+                self.package_name = package_name
+                break
+
     def name(self):
         """ A descripive name of the image, for display in GUIs etc. """
         return "%s (Version %s)" % (self.image_name, self.image_version)

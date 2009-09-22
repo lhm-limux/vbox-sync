@@ -71,7 +71,7 @@ class VBoxSyncAdminGui(object):
             (model,iter) = sel.get_selected()
             if not iter:
                 return
-            self.image = model.get(iter,0)
+            self.image = model.get(iter,0)[0]
 
             self.switch_to(1)
 
@@ -82,6 +82,8 @@ class VBoxSyncAdminGui(object):
 
         if new_state == 1:
             assert self.image
+            self.wTree.get_widget("packageentry").set_text(self.image.package_name)
+            self.wTree.get_widget("versionentry").set_text(self.image.image_version)
 
         self.wTree.get_widget("notebook").set_current_page(new_state)
 
