@@ -36,6 +36,8 @@ import gzip
 import subprocess
 from glob import glob
 import shutil
+from time import localtime, strftime
+import locale
 
 class PackageBuildingError(Exception):
     """This exception is thrown when someting goes wrong in the automated
@@ -113,6 +115,13 @@ class VBoxSyncAdminGui(object):
                 return
             self.image = model.get(iter,0)[0]
 
+            dialogued_action( "Kopiere Orginal-Systemimage (Dies kann eine Weile dauern).",
+                               self.image.prepare_admin_mode )
+
+            self.wTree.get_widget("packageentry").set_text(self.image.package_name)
+            self.wTree.get_widget("versionentry").set_text(self.image.image_version)
+            self.wTree.get_widget("distributionentry").set_text("UNRELEASED")
+
             self.switch_to(1)
 
         elif self.current_state() == 1:
@@ -139,12 +148,8 @@ class VBoxSyncAdminGui(object):
         elif new_state == 1:
             assert self.image
 
-            dialogued_action( "Kopiere Orginal-Systemimage (Dies kann eine Weile dauern).",
-                               self.image.prepare_admin_mode )
         elif new_state == 2:
             assert self.image
-            self.wTree.get_widget("packageentry").set_text(self.image.package_name)
-            self.wTree.get_widget("versionentry").set_text(self.image.image_version)
 
         self.wTree.get_widget("notebook").set_current_page(new_state)
 
@@ -163,6 +168,12 @@ class VBoxSyncAdminGui(object):
 
             package_name = self.wTree.get_widget("packageentry").get_text()
             package_version = self.wTree.get_widget("versionentry").get_text()
+            package_changes = self.wTree.get_widget("changesentry").get_text()
+            package_distribution = self.wTree.get_widget("distributionentry").get_text()
+
+            locale.setlocale(locale.LC_ALL, 'C')
+            date = strftime("%a, %d %b %Y %H:%M:%S %z", localtime())
+            locale.setlocale(locale.LC_ALL, '')
             
             os.mkdir(package_name)
             os.chdir(package_name)
@@ -182,7 +193,8 @@ Depends: ${misc:Depends}, vbox-sync-helper
 Description: ${misc:Image} for VirtualBox
  Retrieves the ${misc:Image} image for VirtualBox from the central rsync
  repository and offers you access through the `${misc:Image}' command.
-""" % { 'package_name' : package_name , 'maintainer' : "TODO"} )
+""" % { 'package_name' : package_name,
+        'maintainer' : "TODO"} )
 
             file("debian/rules", "w").write(
 """#!/usr/bin/make -f
@@ -234,11 +246,22 @@ binary: binary-indep binary-arch
             file("debian/compat", "w").write("7")
 
             file("debian/changelog","w").write(
-                gzip.GzipFile("/usr/share/doc/%s/changelog.gz" % self.image.package_name, "r").read())
+"""%(package_name)s (%(package_version)s) %(package_distribution)s; urgency=low
 
-            retcode = subprocess.call(['debchange','--newversion',package_version,'--no-auto-nmu','--preserve','--release-heuristic','log','TODO'])
-            if retcode != 0:
-                raise PackageBuildingError("debchange call failed")
+  * %(package_changes)s
+
+ -- %(maintainer)s  %(date)s
+
+""" % { 'package_name' : package_name,
+        'package_version' : package_version,
+        'package_changes' : package_changes,
+        'package_distribution' : package_distribution,
+        'maintainer' : "TODO <to@do.org>",
+        'date': date
+        } )
+    
+            file("debian/changelog","a").write(
+                gzip.GzipFile("/usr/share/doc/%s/changelog.gz" % self.image.package_name, "r").read())
 
             retcode = subprocess.call(['dpkg-buildpackage','-uc','-us'])
             if retcode != 0:
