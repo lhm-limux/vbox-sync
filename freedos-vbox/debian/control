@@ -1,7 +1,7 @@
 Source: freedos-vbox
 Section: misc
 Priority: extra
-Maintainer: Philipp Kern <philipp.kern@itomig.de>
+Maintainer: Joachim Breitner <joachim-breitner@itomig.de>
 Build-Depends: debhelper (>= 7)
 Standards-Version: 3.8.2
 
