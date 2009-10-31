@@ -1,9 +1,9 @@
 Source: vbox-sync-helper
 Section: utils
 Priority: extra
-Maintainer: Philipp Kern <philipp.kern@itomig.de>
+Maintainer: Joachim Breitner <joachim.breitner@itomig.de>
 Build-Depends: debhelper (>= 7), python-support
-Standards-Version: 3.8.1
+Standards-Version: 3.8.3
 
 Package: vbox-sync-helper
 Architecture: all
