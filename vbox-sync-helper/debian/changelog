@@ -1,3 +1,9 @@
+vbox-sync-helper (0.2) unstable; urgency=low
+
+  * New release, ready for public consumption 
+
+ -- Joachim Breitner <joachim.breitner@itomig.de>  Sat, 31 Oct 2009 10:19:29 +0100
+
 vbox-sync-helper (0.1) unstable; urgency=low
 
   * Initial release
