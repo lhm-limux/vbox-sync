@@ -61,6 +61,22 @@ def current_email_address():
     finally:
         os.remove(tmp)
 
+def bump_version_number(version):
+    # We again abuse debchange
+    (handle,tmp) = tempfile.mkstemp('','vbox-admin-')
+    try:
+        os.unlink(tmp) # debchange wants to create the file
+        ret = subprocess.call(['debchange', '--create', '--newversion',  version,
+                               '--package', 'dummy', '--changelog', tmp, 'blubb'])
+        if ret != 0:
+            raise Exception, 'debchange failed'
+        ret = subprocess.call(['debchange', '--increment', '--changelog', tmp, 'blubb'])
+        if ret != 0:
+            raise Exception, 'debchange failed'
+        chlog = debian.changelog.Changelog(file=file(tmp))
+        return(str(chlog.version))
+    finally:
+        os.remove(tmp)
 
 def dialogued_action(text, action):
     dlg = gtk.MessageDialog(flags = gtk.DIALOG_MODAL)
@@ -137,7 +153,7 @@ class VBoxSyncAdminGui(object):
                                self.image.prepare_admin_mode )
 
             self.wTree.get_widget("packageentry").set_text(self.image.package_name)
-            self.wTree.get_widget("versionentry").set_text(self.image.image_version)
+            self.wTree.get_widget("versionentry").set_text(bump_version_number(self.image.image_version))
             self.wTree.get_widget("distributionentry").set_text("UNRELEASED")
 
             self.switch_to(1)
