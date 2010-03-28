@@ -232,7 +232,7 @@ Der Name muss auf -vbox enden.</property>
                           <widget class="GtkLabel" id="label12">
                             <property name="visible">True</property>
                             <property name="xalign">0</property>
-                            <property name="label" translatable="yes">In der Regel m&#xFC;ssen Sie die Versionsnummer hier nicht &#xE4;ndern, sie wurde bereits automatisch erh&#xF6;ht. Wenn Sie einen neuen Paketname angegeben haben, k&#xF6;nnen Sie hier z.B. &lt;i&gt;1.0&lt;/i&gt; eintragen.</property>
+                            <property name="label" translatable="yes">In der Regel m&#xFC;ssen Sie die Versionsnummer hier nicht &#xE4;ndern, sie wurde bereits automatisch erh&#xF6;ht. Wenn Sie einen neuen Paketnamen angegeben haben, k&#xF6;nnen Sie hier z.B. &lt;i&gt;1.0&lt;/i&gt; eintragen.</property>
                             <property name="use_markup">True</property>
                             <property name="wrap">True</property>
                           </widget>
