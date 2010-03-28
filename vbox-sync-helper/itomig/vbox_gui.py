@@ -85,10 +85,12 @@ def dialogued_action(text, action):
     class Thread(threading.Thread):
         def run(self):
             action()
-            dlg.destroy()
 
-    thread = Thread().start()
-    dlg.run()
+    thread = Thread()
+    thread.start()
+    dlg.show()
+    thread.join()
+    dlg.destroy()
 
 class VBoxSyncAdminGui(object):
     def __init__(self, config):
@@ -107,6 +109,8 @@ class VBoxSyncAdminGui(object):
         tv.set_model(self.imagestore)
         tv.insert_column_with_attributes(-1,"Image",gtk.CellRendererText(),text=1)
 
+        tv.get_selection().connect("changed", self.update_sensitivity)
+
         window = self.wTree.get_widget("vboxsyncadminwindow")
         # TODO Check for unsaved data here?
         window.connect("destroy", self.on_exit)
@@ -120,6 +124,8 @@ class VBoxSyncAdminGui(object):
 
         self.switch_to(0)
 
+        self.update_sensitivity()
+
         window.show()
 
     def fill_list_of_images(self):
@@ -129,6 +135,29 @@ class VBoxSyncAdminGui(object):
 
     def current_state(self):
         return self.wTree.get_widget("notebook").get_current_page()
+
+    def update_sensitivity(self, *args):
+        if self.current_state() == 0:
+            sel = self.wTree.get_widget("imagetreeview").get_selection()
+            (model,iter) = sel.get_selected()
+            if not iter:
+                self.wTree.get_widget("forwardbutton").set_sensitive(False)
+            else:
+                self.wTree.get_widget("forwardbutton").set_sensitive(True)
+            self.wTree.get_widget("backbutton").set_sensitive(False)
+
+        elif self.current_state() == 1:
+            self.wTree.get_widget("backbutton").set_sensitive(True)
+            self.wTree.get_widget("forwardbutton").set_sensitive(True)
+
+        elif self.current_state() == 2:
+            self.wTree.get_widget("backbutton").set_sensitive(True)
+            self.wTree.get_widget("forwardbutton").set_sensitive(True)
+
+        elif self.current_state() == 3:
+            self.wTree.get_widget("backbutton").set_sensitive(True)
+            self.wTree.get_widget("forwardbutton").set_sensitive(False)
+
 
     def on_backward(self, button):
         if self.current_state() == 1:
@@ -174,6 +203,7 @@ class VBoxSyncAdminGui(object):
     def cleanup(self):
         # In case of abortion
         if self.current_state() >= 1:
+            assert self.image
             self.image.leave_admin_mode()
                 
     def switch_to(self, new_state):
@@ -188,6 +218,7 @@ class VBoxSyncAdminGui(object):
             assert self.image
 
         self.wTree.get_widget("notebook").set_current_page(new_state)
+        self.update_sensitivity()
 
     def on_execute(self, widget):
         assert self.current_state() == 1
