@@ -85,12 +85,11 @@ def dialogued_action(text, action):
     class Thread(threading.Thread):
         def run(self):
             action()
+            dlg.destroy()
 
     thread = Thread()
-    thread.start()
     dlg.show()
-    thread.join()
-    dlg.destroy()
+    thread.start()
 
 class VBoxSyncAdminGui(object):
     def __init__(self, config):
