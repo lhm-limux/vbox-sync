@@ -38,11 +38,29 @@ from glob import glob
 import shutil
 from time import localtime, strftime
 import locale
+import debian.changelog
+
 
 class PackageBuildingError(Exception):
     """This exception is thrown when someting goes wrong in the automated
     package building process."""
     pass
+
+def current_email_address():
+    # We abuse debchange to provide a proper username and email address
+    (handle,tmp) = tempfile.mkstemp('','vbox-admin-')
+    try:
+        os.unlink(tmp) # debchange wants to create the file
+        ret = subprocess.call(['debchange', '--create', '--newversion',  '0.0',
+                               '--package', 'dummy', '--changelog', tmp, 'blubb'])
+        if ret != 0:
+            raise Exception, 'debchange failed'
+        chlog = debian.changelog.Changelog(file=file(tmp))
+        for block in chlog:
+            return block.author
+    finally:
+        os.remove(tmp)
+
 
 def dialogued_action(text, action):
     dlg = gtk.MessageDialog(flags = gtk.DIALOG_MODAL)
@@ -194,7 +212,7 @@ Description: ${misc:Image} for VirtualBox
  Retrieves the ${misc:Image} image for VirtualBox from the central rsync
  repository and offers you access through the `${misc:Image}' command.
 """ % { 'package_name' : package_name,
-        'maintainer' : "TODO"} )
+        'maintainer' : current_email_address() } )
 
             file("debian/rules", "w").write(
 """#!/usr/bin/make -f
@@ -256,7 +274,7 @@ binary: binary-indep binary-arch
         'package_version' : package_version,
         'package_changes' : package_changes,
         'package_distribution' : package_distribution,
-        'maintainer' : "TODO <to@do.org>",
+        'maintainer' : current_email_address(),
         'date': date
         } )
     
