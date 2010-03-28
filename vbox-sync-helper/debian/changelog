@@ -1,8 +1,8 @@
-vbox-sync-helper (0.3) UNRELEASED; urgency=low
+vbox-sync-helper (0.3) itomig; urgency=low
 
   * New release, including graphical vbox-sync-admin tool 
 
- -- Joachim Breitner <joachim.breitner@itomig.de>  Sun, 28 Mar 2010 17:10:17 +0200
+ -- Joachim Breitner <joachim.breitner@itomig.de>  Sun, 28 Mar 2010 17:27:02 +0200
 
 vbox-sync-helper (0.2) unstable; urgency=low
 
