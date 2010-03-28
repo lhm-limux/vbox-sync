@@ -95,6 +95,8 @@ class VBoxSyncAdminGui(object):
         self.config = config
         self.logger = Logger()
 
+        self.target_directory = os.getcwd()
+
         gladefile = os.path.join(os.path.dirname(__file__),"vbox-sync-admin.glade")
         assert os.path.exists(gladefile)
 
@@ -305,17 +307,18 @@ binary: binary-indep binary-arch
 
             # Now look for the produced files
             generated_files = glob("*.changes") + glob("*.deb") + glob("*.dsc") + glob("*.tar.gz")
-            # TODO Send generated_files by mail
+            for gen_file in generated_files:
+                shutil.copy(gen_file, self.target_directory)
             # TODO Copy images to upload directory
         
         finally:
-            os.chdir("/")
+            os.chdir(self.target_directory)
             shutil.rmtree(tmpdir)
 
         dlg = gtk.MessageDialog(flags = gtk.DIALOG_MODAL, buttons = gtk.BUTTONS_OK)
         dlg.props.text = \
-         "Paket erfolgreich gebaut und an den Verantwortlichen " + \
-         "geschickt, sowie das VirtualBox-Image in das entsprechende Verzeichnis geschoben"""
+         "Paket erfolgreich gebaut. Die Dateien finden Sie im Verzeichnis %s." % \
+         self.target_directory
         dlg.run()
         self.cleanup()
         gtk.main_quit()
