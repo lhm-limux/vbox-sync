@@ -309,7 +309,8 @@ binary: binary-indep binary-arch
             generated_files = glob("*.changes") + glob("*.deb") + glob("*.dsc") + glob("*.tar.gz")
             for gen_file in generated_files:
                 shutil.copy(gen_file, self.target_directory)
-            # TODO Copy images to upload directory
+
+            self.image.copy_image_files_to(self.target_directory)
         
         finally:
             os.chdir(self.target_directory)

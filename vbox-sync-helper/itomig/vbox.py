@@ -408,6 +408,10 @@ class VBoxImage(object):
         shutil.copyfile(sys_vdi, admin_vdi)
         shutil.copyfile(sys_cfg, admin_cfg)
 
+    def copy_image_files_to(self, target_directory):
+        shutil.copy(self.vdi_path(), target_directory)
+        shutil.copy(self.cfg_path(), target_directory)
+
     def leave_admin_mode(self):
         assert self.admin_mode
 
