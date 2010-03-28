@@ -1,0 +1,8 @@
+*.pyc
+build/
+debian/files
+debian/vbox-sync-helper.debhelper.log
+debian/vbox-sync-helper.postinst.debhelper
+debian/vbox-sync-helper.prerm.debhelper
+debian/vbox-sync-helper.substvars
+debian/vbox-sync-helper/
