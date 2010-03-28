@@ -291,18 +291,6 @@ Der Name muss auf -vbox enden.</property>
                           </packing>
                         </child>
                         <child>
-                          <placeholder/>
-                        </child>
-                        <child>
-                          <placeholder/>
-                        </child>
-                        <child>
-                          <placeholder/>
-                        </child>
-                        <child>
-                          <placeholder/>
-                        </child>
-                        <child>
                           <widget class="GtkLabel" id="label18">
                             <property name="visible">True</property>
                             <property name="xalign">1</property>
@@ -346,6 +334,18 @@ Der Name muss auf -vbox enden.</property>
                             <property name="x_options">GTK_FILL</property>
                             <property name="y_options"></property>
                           </packing>
+                        </child>
+                        <child>
+                          <placeholder/>
+                        </child>
+                        <child>
+                          <placeholder/>
+                        </child>
+                        <child>
+                          <placeholder/>
+                        </child>
+                        <child>
+                          <placeholder/>
                         </child>
                       </widget>
                     </child>
@@ -393,7 +393,9 @@ Der Name muss auf -vbox enden.</property>
                         <child>
                           <widget class="GtkLabel" id="label14">
                             <property name="visible">True</property>
-                            <property name="label" translatable="yes">Ihre &#xC4;nderungen sind jetzt bereit f&#xFC;r das Verteilen. Wenn Sie auf Ok klicken, wird das Festplatten-Image der virtuellen Maschine auf dem rsync-Server bereitgestellt und das zuh&#xF6;rige Debian-Paket an die Administratoren des Debian-Repositories per e-Mail verschickt.</property>
+                            <property name="label" translatable="yes">Ihre &#xC4;nderungen sind jetzt bereit, paketiert zu werden. Wenn Sie OK klicken, wird das modifizierte Festplatten-Image sowie das zugeh&#xF6;rige Debian-Paket im aktuellen Verzeichnis erstellt.
+
+Das Festplatten-Image muss nun noch auf den rsync-Server kopiert werden. Das Debian-Paket muss in das Debian-Repository aufgenommen werden.</property>
                             <property name="use_markup">True</property>
                             <property name="wrap">True</property>
                           </widget>
@@ -422,7 +424,7 @@ Der Name muss auf -vbox enden.</property>
                 <child>
                   <widget class="GtkLabel" id="label8">
                     <property name="visible">True</property>
-                    <property name="label" translatable="yes">&lt;b&gt;Schritt 4:&lt;/b&gt; Virtuelle Maschine zur Verteilung freigeben</property>
+                    <property name="label" translatable="yes">&lt;b&gt;Schritt 4:&lt;/b&gt; Virtuelle Maschine paketieren</property>
                     <property name="use_markup">True</property>
                   </widget>
                   <packing>
