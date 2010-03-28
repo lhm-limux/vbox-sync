@@ -36,6 +36,7 @@ import optparse
 import os
 import os.path
 import subprocess
+import shutil
 import sys
 import tempfile
 import re
@@ -44,6 +45,12 @@ class ImageNotFoundError(Exception):
     """This exception is raised when the specified image cannot be found
     with the given version on the rsync server (vbox-sync) or if the image
     was expected on the local disk and not found (vbox-invoke).
+    """
+    pass
+
+class PackageNotFoundError(Exception):
+    """This exception is raised when, for an image found on the disk, no 
+    corresponding debian package can be found.
     """
     pass
 
@@ -136,6 +143,28 @@ def guarded_vboxmanage_call(args):
     if retcode != 0:
         raise VBoxInvocationError, ' '.join(cmdline)
 
+class VBoxImageFinder(object):
+    def __init__(self, config):
+        self.config = config
+
+    def find_images(self):
+        for image_name in os.listdir(self.config.target):
+            if os.path.exists( os.path.join(self.config.target, image_name, "%s.vdi" % image_name)):
+                # We need to find the version. This is getting slightly messy
+                for package_name in [ "%s-vbox" % image_name,
+                                      "vbox-%s" % image_name,
+                                      image_name ]:
+                    if os.path.exists ( os.path.join("/usr/share/doc",package_name,"changelog.gz") ):
+                        break
+                if not package_name:
+                    raise PackageNotFoundError
+                yield VBoxImage(self.config, image_name, self._version_of( package_name ))
+
+    def _version_of(self, package_name):                    
+        dpkg_pipe = subprocess.Popen(["dpkg-query", "--showformat", "${Version}", "--show", package_name], stdout=subprocess.PIPE)
+        return dpkg_pipe.communicate()[0]
+ 
+
 class VBoxImage(object):
     def __init__(self, config, image_name, image_version):
         self.config = config
@@ -144,6 +173,22 @@ class VBoxImage(object):
         self.logger = Logger()
         self.disks = dict()
 
+        self.admin_mode = False
+
+        # For the purposes of the GUI, we also want to know the name of the
+        # Debian package that we were shipped in. We find out about that here,
+        # using some common sense
+        for package_name in [ "%s-vbox" % image_name,
+                              "vbox-%s" % image_name,
+                              image_name ]:
+            if os.path.exists ( os.path.join("/usr/share/doc",package_name,"changelog.gz") ):
+                self.package_name = package_name
+                break
+
+    def name(self):
+        """ A descripive name of the image, for display in GUIs etc. """
+        return "%s (Version %s)" % (self.image_name, self.image_version)
+
     def cfg_filename(self):
         return '%s.cfg' % self.image_name
 
@@ -151,10 +196,15 @@ class VBoxImage(object):
         return '%s.vdi' % self.image_name
 
     def _target_path(self, filename=None):
-        if filename:
-            return os.path.join(self.config.target, self.image_name, filename)
+        if self.admin_mode:
+            path = self._vbox_home()
         else:
-            return os.path.join(self.config.target, self.image_name)
+            path = os.path.join(self.config.target, self.image_name)
+
+        if filename:
+            path = os.path.join(path, filename)
+        
+        return path
 
     def vdi_path(self):
         return self._target_path(self.vdi_filename())
@@ -173,7 +223,10 @@ class VBoxImage(object):
         self._make_vdi_immutable()
 
     def _vbox_home(self):
-        path = '~/.VirtualBox-%s' % self.image_name
+        if self.admin_mode:
+            path = '~/.VirtualBox-%s-admin' % self.image_name
+        else:
+            path = '~/.VirtualBox-%s' % self.image_name
         return os.path.abspath(os.path.expanduser(path))
 
     def _ensure_vbox_home(self):
@@ -250,8 +303,10 @@ class VBoxImage(object):
 
     def _register_disks(self):
         for disk in self.disks:
-            if disk == 'system':
+            if disk == 'system' and not self.admin_mode:
                 disk_type = 'immutable'
+            elif disk == 'system' and self.admin_mode:
+                disk_type = 'writethrough'
             elif disk == 'data':
                 # TODO: Do we want that?  Causes it to be unaffected by
                 # snapshots.
@@ -298,7 +353,11 @@ class VBoxImage(object):
             raise ImageNotFoundError
         self.disks['system'] = self.vdi_path()
 
-    def invoke(self):
+    def invoke(self, use_exec=True):
+        """
+        Invokes the virtual machine in this image. If the parameter exec is
+        true, the current process will be replaced.
+        """
         self._ensure_vbox_home()
         self.vbox_registry = VBoxRegistry(self._vbox_home())
         self._ensure_system_disk()
@@ -308,8 +367,10 @@ class VBoxImage(object):
         self.vbox_registry.garbage_collect_hdds(self.image_name)
         # Using execlp to replace the current process image.
         # XXX: do we want that?  function does not return
-        os.execlp('VBoxManage', 'VBoxManage', '-nologo',
-                  'startvm', self.image_name)
+        if use_exec:
+            os.execlp('VBoxManage', 'VBoxManage', '-nologo', 'startvm', self.image_name)
+        else:
+            os.spawnlp('VBoxManage', 'VBoxManage', '-nologo', 'startvm', self.image_name)
         # TODO: make this configurable to either use SDL or VBox proper
         #os.execlp('vboxsdl', '-vm', self.image_name)
 
@@ -330,6 +391,38 @@ class VBoxImage(object):
                     raise
                 self.logger.warn('%s not empty, thus not removed.',
                                  self._target_path())
+
+    def prepare_admin_mode(self):
+        assert not self.admin_mode
+
+        sys_vdi = self.vdi_path()
+        sys_cfg = self.cfg_path()
+
+        self.admin_mode = True
+
+        self._ensure_vbox_home()
+
+        admin_vdi = self.vdi_path()
+        admin_cfg = self.cfg_path()
+
+        shutil.copyfile(sys_vdi, admin_vdi)
+        shutil.copyfile(sys_cfg, admin_cfg)
+
+    def copy_image_files_to(self, target_directory):
+        shutil.copy(self.vdi_path(), target_directory)
+        shutil.copy(self.cfg_path(), target_directory)
+
+    def leave_admin_mode(self):
+        assert self.admin_mode
+
+        if os.path.exists(self.vdi_path()):
+            os.remove(self.vdi_path())
+        if os.path.exists(self.cfg_path()):
+            os.remove(self.cfg_path())
+        shutil.rmtree(self._vbox_home())
+
+        self.admin_mode = False
+
 
 class VBoxRegistry(object):
     # XXX: handle failures
