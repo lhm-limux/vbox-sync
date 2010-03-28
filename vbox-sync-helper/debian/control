@@ -7,7 +7,7 @@ Standards-Version: 3.8.3
 
 Package: vbox-sync-helper
 Architecture: all
-Depends: ${shlibs:Depends}, ${misc:Depends}, ${python:Depends}, rsync, parted, virtualbox-ose-qt, devscripts, python-debian
+Depends: ${shlibs:Depends}, ${misc:Depends}, ${python:Depends}, rsync, parted, virtualbox-ose-qt (>= 2.2.4), virtualbox-ose-qt (<= 2.2.4+), devscripts, python-debian
 Description: provides a method of syncing VirtualBox images from an rsync server
  This program is used by packages that logically contain VitualBox images, but
  need to aquire them from an rsync server. It also contains the helpers to set
