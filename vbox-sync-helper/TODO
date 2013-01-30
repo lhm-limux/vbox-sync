@@ -3,4 +3,9 @@ TODO list
 
  - Eliminate TODO entries in the source.
  - Test VM distributions with NICs enabled.
+ - Test w/ newest Virtualbox Release
+ - Polish documentation
+ - Write proper testcases
+ - Make dh_lintian happy
+ - [...]
 
